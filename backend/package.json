@@ -1,0 +1,44 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "**CineVerse** is a full-stack MERN web app that combines cinema ticket booking and home video streaming in one platform — with an interactive seat map, Razorpay payments, role-based dashboards, and a Flask-powered ML recommendation engine.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aryan5317/CineVerse.git"
+  },
+  "keywords": [
+    "Cinema",
+    "Ticket",
+    "Streaming",
+    "Single",
+    "Platform",
+    "Seats",
+    "Recommedation"
+  ],
+  "author": "aryan raj",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Aryan5317/CineVerse/issues"
+  },
+  "homepage": "https://github.com/Aryan5317/CineVerse#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.0",
+    "nodemailer": "^9.0.1",
+    "validator": "^13.15.35"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
