@@ -1,8 +1,8 @@
 import { useContext } from "react"
-import ProfileSectionBeforeLogin from "../../components/Users/ProfileSection/ProfileSectionBeforeLogin"
-import UserSectionButton from "../../components/Users/UserSectionButton"
-import ProfileSectionAfterLogin from "../../components/Users/ProfileSection/ProfileSectionAfterLogin"
+import ProfileSectionBeforeLogin from "../User/../../components/Users/ProfileSection/ProfileSectionBeforeLogin"
 import { propContext } from "../../context/User/contextApi"
+import UserSectionButton from "../User/../../components/Users/UserSectionButton"
+import ProfileSectionAfterLogin from "../User/../../components/Users/ProfileSection/ProfileSectionAfterLogin"
 
 function ProfilePage() {
     const { isLoggedIn } = useContext(propContext)

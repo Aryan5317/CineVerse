@@ -1,9 +1,9 @@
 import { useContext, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { FiEye, FiEyeOff } from "react-icons/fi"
-import { propContext } from "../../context/User/contextApi"
-import loginDetails from "../../context/User/Authentication/loginDetails"
-import loginService from "../../services/User/userLoginService"
+import loginDetails from "../User/../../context/User/Authentication/loginDetails.js"
+import {propContext} from "../User/../../context/User/contextApi"
+import loginService from "../User/../../services/User/userLoginService.js"
 
 function LoginPage() {
     const { setIsLoggedIn } = useContext(propContext)

@@ -2,8 +2,8 @@ import React from "react"
 import { useState } from "react"
 import { FiEye, FiEyeOff } from "react-icons/fi"
 import { useNavigate, Link } from "react-router-dom"
-import resetPasswordValidation from "../../context/User/Authentication/resetPassword"
-import resetPassword from "../../services/User/Auth/resetPasswordService"
+import resetPasswordValidation from "../../context/User/Authentication/resetPassword.js"
+import resetPassword from "../../services/User/Auth/resetPasswordService.js"
 
 
 function ResetPassword() {

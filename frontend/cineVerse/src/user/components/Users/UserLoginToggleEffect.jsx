@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom"
 import { useContext, useState } from "react"
-import { propContext } from "../../context/User/contextApi"
-import logOutService from "../../services/User/logOutService"
+import {propContext} from "../Users/../../context/User/contextApi"
+import logOutService from "../Users/../../services/User/logOutService"
 
 function UserLoginToggleEffect({ logOutValue }) {
     const { isLoggedIn, setIsLoggedIn, setTopProfileIconToggleButton } = useContext(propContext)

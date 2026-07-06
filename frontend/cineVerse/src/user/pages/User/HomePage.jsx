@@ -1,6 +1,6 @@
-import UserSectionButton from "../../components/Users/UserSectionButton"
-import UserLoginToggleEffect from "../../components/Users/UserLoginToggleEffect"
-import { propContext } from "../../context/User/contextApi"
+import UserSectionButton from "../User/../../components/Users/UserSectionButton"
+import UserLoginToggleEffect from "../User/../../components/Users/UserLoginToggleEffect"
+import { propContext } from "../User/../../context/User/contextApi"
 import { useContext, useState, useEffect } from "react"
 
 function HomePage() {

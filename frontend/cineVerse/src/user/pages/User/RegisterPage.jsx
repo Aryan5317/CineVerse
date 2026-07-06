@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { FiEye, FiEyeOff } from "react-icons/fi"
-import registerDetails from "../../context/User/Authentication/registerValidationDetails";
-import registerService from "../../services/User/userRegisterService";
+import registerDetails from "../User/../../context/User/Authentication/registerValidationDetails"
+import registerService from "../User/../../services/User/userRegisterService"
 
 function RegisterPage() {
 

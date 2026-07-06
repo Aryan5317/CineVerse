@@ -108,8 +108,9 @@ const loginUser = asyncHandler(async (req, res, next) => {
 
     findUser.refreshToken = refreshToken
 
-    await findUser.save();
-
+    await findUser.save({
+        validateBeforeSave: false,
+    });
     const getUserDetails = await User.findById(userId)
         .select("-refreshToken -password -mobileNumber -otp -otpExpiry")
 

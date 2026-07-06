@@ -1,8 +1,8 @@
 import React from "react"
-import handleToken from "../../../services/User/handleTokenRouteService"
+import handleToken from "../ProfileSection/../../Users/../../services/User/handleTokenRouteService"
 import logOutService from "../../../services/User/logOutService"
 import { useContext } from "react"
-import { propContext } from "../../../context/User/contextApi"
+import {propContext} from "../ProfileSection/../../Users/../../context/User/contextApi"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 
