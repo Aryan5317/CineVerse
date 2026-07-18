@@ -2,7 +2,7 @@ import { useState } from "react"
 import { RiNotification4Line, RiMenuFill } from "@remixicon/react";
 import SuperAdminMenuOption from "../../components/SuperAdminMenuOption";
 import SuoerAdminTopBar from "../../components/SuoerAdminTopBar";
-import AdminLoginPage from "./AdminLoginPage";
+import AdminLoginPage from "../AdminLoginPage";
 function AdminHomePage() {
     const [menuButton, setMenuButton] = useState(false)
 

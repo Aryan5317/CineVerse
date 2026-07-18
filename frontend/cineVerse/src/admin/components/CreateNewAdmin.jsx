@@ -10,6 +10,7 @@ function CreateNewAdmin({ setCreateButton }) {
         fullname: "",
         email: "",
         password: "",
+        mobileNumber: "",
         date: "",
     })
     const [errors, setErrors] = useState({})
@@ -34,6 +35,14 @@ function CreateNewAdmin({ setCreateButton }) {
     }
 
     const SetNewAdminPassword = (e) => {
+        const { name, value } = e.target
+        setNewAdminDetails((prev) => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const SetNewAdminMobileNumber = (e) => {
         const { name, value } = e.target
         setNewAdminDetails((prev) => ({
             ...prev,
@@ -85,7 +94,7 @@ function CreateNewAdmin({ setCreateButton }) {
                 ...prev,
                 message: error.message
             }));
-        }   
+        }
     }
 
     const BackToAdmistrationPage = () => {
@@ -199,6 +208,39 @@ function CreateNewAdmin({ setCreateButton }) {
                             {errors.password && (
                                 <p className="text-sm font-medium text-red-600">
                                     {errors.password}
+                                </p>
+                            )}
+
+                        </div>
+
+                        <div className="space-y-2">
+
+                            <h2 className="text-sm font-semibold text-slate-700">
+                                Mobile Number
+                            </h2>
+
+                            <div
+                                className={`flex items-center rounded-xl bg-slate-50 px-4 transition-all duration-200 ${errors.password
+                                    ? "border border-red-500"
+                                    : "border border-slate-300 focus-within:border-blue-600 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100"
+                                    }`}
+                            >
+
+                                <input
+                                    type="text"
+                                    name="mobileNumber"
+                                    value={newAdminDetails.mobileNumber}
+                                    onChange={SetNewAdminMobileNumber}
+                                    placeholder="Enter Mobile Number"
+                                    className="flex-1 bg-transparent py-3 outline-none"
+                                />
+
+
+                            </div>
+
+                            {errors.mobileNumber && (
+                                <p className="text-sm font-medium text-red-600">
+                                    {errors.mobileNumber}
                                 </p>
                             )}
 

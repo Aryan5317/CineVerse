@@ -2,13 +2,14 @@ import React from "react"
 import { useState, useContext } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { FiEye, FiEyeOff } from "react-icons/fi"
-import loginValidation from "../../context/AdminLoginValidation"
-import loginService from "../../services/adminLoginService"
-import { superPropContext } from "../../context/superAdminContextApi"
+import loginValidation from "../context/AdminLoginValidation.js"
+import loginService from "../services/adminLoginService.js"
+import { adminPropContext } from "../context/AdminContextProvider/adminContextApi.js"
+
 
 function AdminLoginPage() {
-    const {setIsAdminLoggedIn} = useContext(superPropContext)
-    
+    const {setIsAdminLoggedIn} = useContext(adminPropContext)
+
     const navigate = useNavigate()
 
     const [adminDetails, setAdminDetails] = useState({
@@ -53,13 +54,28 @@ function AdminLoginPage() {
         try {
             const loginResponse = await loginService(adminDetails)
             console.log("Admin login Response: ", loginResponse)
+            console.log("Admin role is: ", loginResponse.data.role)
             setLoginMessage(true);
             setLoading(true)
-            setIsAdminLoggedIn(true)
-            setTimeout(() => {
-                setLoginMessage(false)
-                navigate("/admin/dashboard")
-            }, 2000);
+            if (loginResponse.data.role === "superAdmin") {
+                console.log("Super admin condition runs")
+                setIsAdminLoggedIn(true)
+                setTimeout(() => {
+                    setLoginMessage(false)
+                    console.log("Navigation done")
+                    navigate("/admin/dashboard")
+                }, 2000)
+            }
+            if (loginResponse.data.role === "admin") {
+                console.log("Admin condition runs once")
+                setIsAdminLoggedIn(true)
+                console.log("Admin condition runs")
+                setTimeout(() => {
+                    setLoginMessage(false)
+                    console.log("Navigation done")
+                    navigate("/admin/panel/dashboard")
+                }, 2000);
+            }
         } catch (error) {
             console.log("Erorrs from login Service: ", error)
             setLoginMessage(false)
@@ -69,7 +85,7 @@ function AdminLoginPage() {
                 message: error.message
             }))
         }
-        finally{
+        finally {
             setLoading(false)
         }
 

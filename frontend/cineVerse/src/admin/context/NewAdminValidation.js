@@ -21,6 +21,12 @@ function newAdminValidation(newAdminDetails) {
     else if (!(passwordRegix.test(newAdminDetails.password))) {
         errors.password = "*Atleast 1 lowercase, 1 uppercase and 1 number is reuired."
     }
+    if (!newAdminDetails.mobileNumber) {
+        errors.mobileNumber = "*Mobile Number is required"
+    }
+    else if (!validator.isMobilePhone(newAdminDetails.mobileNumber.trim(), "en-IN")) {
+        errors.mobileNumber = "*Enter correct Mobile Number"
+    }
     if (!newAdminDetails.date.trim()) {
         errors.date = "*Joining Date is required"
     }

@@ -1,17 +1,39 @@
 import SuoerAdminTopBar from "../../components/SuoerAdminTopBar"
 import SuperAdminMenuOption from "../../components/SuperAdminMenuOption"
 import CreateNewAdmin from "../../components/CreateNewAdmin"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom";
+import GetAllAdmin from "../../components/GetAllAdmin"
+import AdminProfileDetails from "../../components/AdminProfileDetails"
+import { useParams } from "react-router-dom";
 
 function AdminAdministrationPage() {
+    const navigate = useNavigate();
+
+    const { adminDetailsIdRoute } = useParams()
 
     const [menuButton, setMenuButton] = useState(false)
     const [createButton, setCreateButton] = useState(false)
+    const [selectAdmin, setSelectAdmin] = useState(false)
+    const [selectedAdminId, setSelectedAdminId] = useState("")
 
     const createNewAdmin = () => {
         console.log("Create admin Button clicked")
         setCreateButton((prev) => !prev)
     }
+
+    useEffect(() => {
+        if (adminDetailsIdRoute) {
+            setSelectAdmin(true)
+            setSelectedAdminId(adminDetailsIdRoute)
+        }
+        else {
+            setSelectAdmin(false)
+            setSelectedAdminId("");
+        }
+    }, [adminDetailsIdRoute])
+
+
 
     return (
         <>
@@ -31,7 +53,7 @@ function AdminAdministrationPage() {
                     <SuperAdminMenuOption />
                 </div>
 
-                {!createButton && <div className="px-4 py-5">
+                {!createButton && !selectAdmin && <div className="px-4 py-5">
 
                     <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-5">
 
@@ -46,18 +68,15 @@ function AdminAdministrationPage() {
                         </button>
 
                     </div>
-
-                    <div className="mt-5 bg-white rounded-2xl border border-slate-200 shadow-md min-h-[420px] flex items-center justify-center">
-
-                        <h2 className="text-center text-slate-400 font-medium px-6">
-                            Admin List will appear here
-                        </h2>
-
-                    </div>
-
                 </div>}
                 {createButton && <div className="px-4 py-5"> <CreateNewAdmin setCreateButton={setCreateButton} /> </div>}
 
+                {!createButton && !selectAdmin && <div>
+                    <GetAllAdmin />
+                </div>}
+
+                {selectAdmin && <div> <AdminProfileDetails /></div>}
+                
             </div>
         </>
     )

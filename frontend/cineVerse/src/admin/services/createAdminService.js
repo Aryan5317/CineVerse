@@ -5,6 +5,7 @@ async function createAdminService(newAdminDetails) {
         fullName: newAdminDetails.fullname,
         email: newAdminDetails.email,
         password: newAdminDetails.password,
+        mobileNumber: newAdminDetails.mobileNumber,
         joiningdate: newAdminDetails.date
     }
     console.log("Data to send is: ", dataToSend)

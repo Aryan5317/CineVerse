@@ -20,6 +20,12 @@ const adminSchema = new Schema({
         type: String,
         required: [true, "Password is required"]
     },
+    mobileNumber: {
+        type: String,
+        required: [true, "MovileNumber is required"],
+        trim: true,
+        unique: true,
+    },
     role: {
         type: String,
         required: [true, "Role is required"],
@@ -36,6 +42,9 @@ const adminSchema = new Schema({
     joiningdate: {
         type: Date,
         required: true
+    },
+    refreshToken: {
+        type: String,
     }
 }, { timestamps: true })
 
@@ -60,6 +69,17 @@ adminSchema.methods.generateAccessToken = function () {
 
         process.env.ADMIN_ACCESS_TOKEN_SECRET, {
         expiresIn: process.env.ADMIN_ACCESS_TOKEN_EXPIRY
+    })
+}
+
+adminSchema.methods.generateRefreshToken = function () {
+    return jwt.sign({
+        _id: this._id,
+        email: this.email,
+        role: this.role
+    },
+        process.env.ADMIN_REFRESH_TOKEN_SECRET, {
+        expiresIn: process.env.ADMIN_REFRESH_TOKEN_EXPIRY
     })
 }
 

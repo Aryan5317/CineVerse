@@ -1,4 +1,4 @@
-async function handleSuperAdminToken (){
+async function currentAdminDetails (){
     console.log("Handle super admin token")
     try {
         const response = await fetch("http://localhost:8000/cineVerse/app/api/admin/current-admin", {
@@ -19,4 +19,4 @@ async function handleSuperAdminToken (){
     }
 }
 
-export default handleSuperAdminToken
+export default currentAdminDetails

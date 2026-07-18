@@ -1,6 +1,12 @@
 import mongoose, { Schema } from "mongoose";
 
 const movieSchema = new Schema({
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: "Admin",
+        required: true,
+        index: true
+    },
     title: {
         type: String,
         required: [true, "Title is required"],
@@ -16,15 +22,19 @@ const movieSchema = new Schema({
         type: String,
         required: [true, "Url is required"],
     },
+    movieBannerUrl: {
+        type: String,
+        required: [true, "Url is required"],
+    },
     duration: {
         type: Number,
         required: [true, "Duration is required"],
     },
-    releaseYear: {
-        type: Number,
-        required: [true, "Release Year is required"],
-        min: 1900,
-        max: new Date().getFullYear() + 5
+    releaseDate: {
+        type: Date,
+        required: [true, "Release Date is required"],
+        min: new Date("1900-01-01"),
+        max: new Date(new Date().getFullYear() + 5, 11, 31)
     },
     imdbRating: {
         type: Number,
@@ -53,16 +63,26 @@ const movieSchema = new Schema({
     },
     genre: {
         type: [String],
+        index: true,
         required: [true, "Genre is required"]
     },
     language: {
         type: [String],
+        index: true,
         required: [true, "Language is required"]
     },
-    cast: {
-        type: [String],
-        required: [true, "Cast is required"]
-    },
+    cast: [
+        {
+            actorName: {
+                type: String,
+                required: [true, "Cast is required"]
+            },
+            actorGender: {
+                type: String,
+                required: [true, "Cast is required"]
+            }
+        }
+    ],
     director: {
         type: String,
         required: [true, "Director is required"],
@@ -70,17 +90,26 @@ const movieSchema = new Schema({
     },
     ageRating: {
         type: String,
-        enum: ["U", "UA", "A"],
+        enum: [
+            "U (Below 7)",
+            "U (13+)",
+            "U/A (16+)",
+            "A (18+)"
+        ],
         required: [true, "Age Rating is required"],
     },
     availabilityType: {
         type: String,
+        index: true,
         required: [true, "Availability is required"],
         enum: ["Theatre", "Streaming", "Both"]
     },
     streamingVideoUrl: {
         type: String,
-    }
+    },
+    movietrailerUrl: {
+        type: String,
+    },
 }, { timestamps: true })
 
 export const Movie = mongoose.model("Movie", movieSchema)

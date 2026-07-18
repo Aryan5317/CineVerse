@@ -21,8 +21,9 @@ const preDefinedSuperAdmin = async () => {
             fullName: process.env.SUPER_ADMIN_NAME,
             email: process.env.SUPER_ADMIN_EMAIL,
             password: process.env.SUPER_ADMIN_PASSWORD,
+            mobileNumber: process.env.SUPER_ADMIN_MOBILE_NUMBER,
             role: "superAdmin",
-            joiningDate: new Date(process.env.SUPER_ADMIN_JOINING_DATE)
+            joiningdate: new Date(process.env.SUPER_ADMIN_JOINING_DATE),
         });
         console.log("Super Admin created successfully.");
         console.log("Name:", superAdmin.fullName);
