@@ -5,6 +5,7 @@ import ProfilePage from "../pages/User/ProfilePage";
 import ForgetPassword from "../pages/User/ForgetPassword";
 import ResetPassword from "../pages/User/ResetPassword";
 import UserProvider from "../context/User/ProviderContext/UserProvider";
+import MovieCompleteDetailsPage from "../pages/User/MovieCompleteDetailsPage";
 
 const userRoutes = [
     {
@@ -34,6 +35,10 @@ const userRoutes = [
             {
                 path: "reset-password",
                 element: <ResetPassword />
+            },
+            {
+                path: "movie/:movieId",
+                element: <MovieCompleteDetailsPage />
             }
         ]
     }

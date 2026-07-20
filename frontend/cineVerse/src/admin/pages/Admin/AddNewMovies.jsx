@@ -22,6 +22,10 @@ function AddNewMovies() {
         movieGenre: [],
         movieLanguage: [],
         movieDirector: "",
+        productionHouse: "",
+        producer: "",
+        writer: "",
+        musicDirector: "",
         movieActors: [],
         movieIMDbRating: "",
         movieAvailability: "",
@@ -110,6 +114,38 @@ function AddNewMovies() {
     }
 
     const SetMovieDirector = (e) => {
+        const { name, value } = e.target
+        setMovieDetails((prev) => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const SetProductionHouse = (e) => {
+        const { name, value } = e.target
+        setMovieDetails((prev) => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const SetProducer = (e) => {
+        const { name, value } = e.target
+        setMovieDetails((prev) => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const SetWritter = (e) => {
+        const { name, value } = e.target
+        setMovieDetails((prev) => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const SetMusicDirector = (e) => {
         const { name, value } = e.target
         setMovieDetails((prev) => ({
             ...prev,
@@ -758,107 +794,109 @@ function AddNewMovies() {
 
                                 </div>
 
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                <div>
 
-                                    <div className="flex items-center justify-between">
+                                    <label className="mb-2 block font-semibold text-slate-700">
+                                        Production House
+                                    </label>
 
-                                        <div>
+                                    <input
+                                        type="text"
+                                        name="productionHouse"
+                                        value={movieDetails.productionHouse}
+                                        onChange={SetProductionHouse}
+                                        placeholder="Enter production house"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200"
+                                    />
 
-                                            <h2 className="text-lg font-semibold text-slate-800">
-                                                Cast Members
-                                            </h2>
+                                    {errors.productionHouse && (
 
-                                            <p className="mt-1 text-sm text-slate-500">
-                                                Add the actors appearing in this movie.
-                                            </p>
+                                        <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
 
-                                        </div>
-
-                                        {!addActor && (
-
-                                            <button
-                                                onClick={AddNewActors}
-                                                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 active:scale-95"
-                                            >
-                                                + Add Actor
-                                            </button>
-
-                                        )}
-
-                                    </div>
-
-                                    {errors.movieActors && (
-
-                                        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
-
-                                            {errors.movieActors}
+                                            {errors.productionHouse}
 
                                         </p>
 
                                     )}
 
-                                    {movieDetails.movieActors.length !== 0 && (
+                                </div>
 
-                                        <div className="mt-5 space-y-4">
+                                <div>
 
-                                            {movieDetails.movieActors.map((actors, index) => (
+                                    <label className="mb-2 block font-semibold text-slate-700">
+                                        Producer
+                                    </label>
 
-                                                <div
-                                                    key={index}
-                                                    className="rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-blue-300 hover:shadow-sm"
-                                                >
+                                    <input
+                                        type="text"
+                                        name="producer"
+                                        value={movieDetails.producer}
+                                        onChange={SetProducer}
+                                        placeholder="Enter producer name"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200"
+                                    />
 
-                                                    <div className="flex items-start justify-between">
+                                    {errors.producer && (
 
-                                                        <div>
+                                        <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
 
-                                                            <h3 className="text-base font-semibold text-slate-800">
-                                                                Actor {index + 1}
-                                                            </h3>
+                                            {errors.producer}
 
-                                                            <p className="mt-2 text-base text-slate-700">
-                                                                {actors.actorName}
-                                                            </p>
-
-                                                        </div>
-
-                                                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                                                            {actors.actorGender}
-                                                        </span>
-
-                                                    </div>
-
-                                                </div>
-
-                                            ))}
-
-                                        </div>
+                                        </p>
 
                                     )}
 
-                                    {addActor && (
+                                </div>
 
-                                        <div className="mt-5 border-t border-slate-200 pt-5">
+                                <div>
 
-                                            <AddNewMovieActors
-                                                setAddActor={setAddActor}
-                                                setMovieDetails={setMovieDetails}
-                                                setAddCastMessage={setAddCastMessage}
-                                            />
+                                    <label className="mb-2 block font-semibold text-slate-700">
+                                        Writer
+                                    </label>
 
-                                        </div>
+                                    <input
+                                        type="text"
+                                        name="writer"
+                                        value={movieDetails.writer}
+                                        onChange={SetWritter}
+                                        placeholder="Enter writer name"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200"
+                                    />
+
+                                    {errors.writer && (
+
+                                        <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+
+                                            {errors.writer}
+
+                                        </p>
 
                                     )}
 
-                                    {addCastMessage && (
+                                </div>
 
-                                        <div className="mt-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+                                <div>
 
-                                            <p className="text-sm font-semibold text-green-700">
-                                                ✅ Cast member added successfully.
-                                            </p>
+                                    <label className="mb-2 block font-semibold text-slate-700">
+                                        Music Director
+                                    </label>
 
-                                        </div>
+                                    <input
+                                        type="text"
+                                        name="musicDirector"
+                                        value={movieDetails.musicDirector}
+                                        onChange={SetMusicDirector}
+                                        placeholder="Enter music director name"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200"
+                                    />
+
+                                    {errors.musicDirector && (
+
+                                        <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+
+                                            {errors.musicDirector}
+
+                                        </p>
 
                                     )}
 
@@ -1003,7 +1041,7 @@ function AddNewMovies() {
                                         />
 
                                         <span className="font-medium text-slate-700">
-                                            Theatre & Streaming
+                                            Both
                                         </span>
 
                                     </label>
@@ -1168,7 +1206,7 @@ function AddNewMovies() {
                     </div>
 
                 </div>
-            </div>
+            </div >
         </>
     )
 }

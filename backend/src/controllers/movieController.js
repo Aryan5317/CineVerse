@@ -3,6 +3,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { Movie } from "../models/movieModal.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 import ApiError from "../utils/errorHandling.js";
+import { json } from "stream/consumers";
 
 const addMovie = asyncHandler(async (req, res, next) => {
 
@@ -122,6 +123,9 @@ const addMovie = asyncHandler(async (req, res, next) => {
 
     console.log("Movie banner secure url: ", movieBanner)
 
+    const language = JSON.parse(req.body.movieLanguage)
+    const genre = JSON.parse(req.body.movieGenre)
+
     const createMovie = await Movie.create({
         createdBy: adminData._id,
         title: movieTitle.trim(),
@@ -130,14 +134,15 @@ const addMovie = asyncHandler(async (req, res, next) => {
         releaseDate: movieReleaseDate,
         moviePosterUrl: moviePoster.secure_url,
         movieBannerUrl: movieBanner.secure_url,
-        genre: movieGenre,
-        language: movieLanguage,
+        genre: genre,
+        language: language,
         cast: movieCast,
         director: movieDirector.trim(),
         ageRating: movieAgeRating,
         availabilityType: movieAvailability,
         streamingVideoUrl: movieStreamingUrl.trim(),
-        movietrailerUrl: movieTrailerUrl.trim()
+        movietrailerUrl: movieTrailerUrl.trim(),
+        imdbRating: movieIMDbRating
     })
 
     if (!createMovie) {
@@ -151,7 +156,7 @@ const addMovie = asyncHandler(async (req, res, next) => {
 
 })
 
-const giveAllMovie = asyncHandler(async (req, res, next) => {
+const giveAllMovieByAdmin = asyncHandler(async (req, res, next) => {
 
     const adminData = req.admin
     if (adminData.role !== "admin") {
@@ -172,4 +177,35 @@ const giveAllMovie = asyncHandler(async (req, res, next) => {
 
 })
 
-export { addMovie, giveAllMovie }
+const getMovieDetails = asyncHandler(async (req, res, next) => {
+
+    const { movieId } = req.params
+
+    const findMovie = await Movie.findById(movieId)
+        .select("-createdBy")
+    if (!findMovie) {
+        throw new ApiError(404, "No movie found")
+    }
+
+    console.log("Movie details is: ", findMovie)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Movie Details fetched", findMovie))
+})
+
+const getAllMovie = asyncHandler(async (req, res, next) => {
+
+    const allMovie = await Movie.find({
+        $or: [
+            { availabilityType: "Streaming" },
+            { availabilityType: "Both" }
+        ]
+    })
+        .select("-createdBy -description -director -genre -cast -language")
+    console.log("All movie are: ", allMovie)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "All movie fetched", allMovie))
+})
+
+export { addMovie, giveAllMovieByAdmin, getMovieDetails, getAllMovie }

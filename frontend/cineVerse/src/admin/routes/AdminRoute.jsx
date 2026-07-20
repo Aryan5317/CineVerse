@@ -9,6 +9,7 @@ import AdminProtectedRoute from "../context/AdminContextProvider/AdminProtectedR
 import AdminProfilePage from "../pages/Admin/AdminProfilePage";
 import AddNewMovies from "../pages/Admin/AddNewMovies";
 import MoviesPage from "../pages/Admin/MoviesPage";
+import MovieCompleteDetailsPage from "../pages/Admin/MovieCompleteDetailsPage";
 
 const adminRoutes = [
     {
@@ -62,6 +63,10 @@ const adminRoutes = [
                     {
                         path: "panel/movies",
                         element: <MoviesPage />
+                    },
+                    {
+                        path: "panel/movies/:movieDetailsId",
+                        element: <MovieCompleteDetailsPage />
                     }
                 ]
             },

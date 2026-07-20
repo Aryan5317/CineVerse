@@ -110,6 +110,27 @@ const movieSchema = new Schema({
     movietrailerUrl: {
         type: String,
     },
+    productionHouse: {
+        type: String,
+        required: true,
+        trim: true,
+        index: true,
+    },
+    producer: {
+        type: String,
+        requird: true,
+        trim: true,
+    },
+    writer: {
+        type: String,
+        requird: true,
+        trim: true,
+    },
+    musicDirector: {
+        type: String,
+        requird: true,
+        trim: true,
+    }
 }, { timestamps: true })
 
 export const Movie = mongoose.model("Movie", movieSchema)

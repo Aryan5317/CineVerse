@@ -2,10 +2,15 @@ import UserSectionButton from "../User/../../components/Users/UserSectionButton"
 import UserLoginToggleEffect from "../User/../../components/Users/UserLoginToggleEffect"
 import { propContext } from "../User/../../context/User/contextApi"
 import { useContext, useState, useEffect } from "react"
+import streamingMovieDetails from "../../services/User/streamingMovieDetails.js"
+import { useNavigate } from "react-router-dom"
 
 function HomePage() {
+
+    const navigate = useNavigate()
     const { isLoggedIn, setTopProfileIconToggleButton, topProfileIconToggleButton } = useContext(propContext)
     const [logOutMessage, setLogOutMessage] = useState(null)
+    const [streamingMovieData, setStreamingMovieData] = useState([])
 
     const SetUserToggleMode = () => {
         setTopProfileIconToggleButton((prev) => !prev)
@@ -18,6 +23,27 @@ function HomePage() {
             }, 3000);
         }
     }, [logOutMessage])
+
+    useEffect(() => {
+        const movieData = async () => {
+            try {
+                const movieDetails = await streamingMovieDetails()
+                if (movieDetails) {
+                    setStreamingMovieData(movieDetails.data)
+                    console.log("Streaming movie details is: ", movieDetails.data)
+                }
+            } catch (error) {
+                console.log("Error from backend is: ", error)
+                setStreamingMovieData({})
+            }
+        }
+        movieData()
+    }, [])
+
+    const MovieCompleteDetailsPage = (id) => {
+        console.log("Movie Complete details page is clicked")
+        navigate(`/movie/${id}`)
+    }
 
     return (
         <div className="bg-[#F8FAFC] ">
@@ -75,13 +101,67 @@ function HomePage() {
                     <h1>This is the part of the tending section it will build later</h1>
                 </div>
             </div>
-            <div className="border border-blue-500 mt-2">
-                <div>
-                    <h1>Current Streaming</h1>
+            <div className="mt-8">
+
+                <div className="flex items-center justify-between mb-5">
+
+                    <h1 className="text-2xl font-bold text-slate-900">
+                        🍿 Current Streaming
+                    </h1>
+
+                    <button className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                        View All →
+                    </button>
+
                 </div>
-                <div>
-                    <h1>This is the part of the current streaming it will build later</h1>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4">
+
+                    <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide pb-2">
+
+                        {streamingMovieData.map((movie, index) => (
+
+                            <div
+                                key={index}
+                                className="w-44 flex-shrink-0 snap-start rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300"
+                            >
+
+                                <div className="h-64 bg-slate-200 overflow-hidden">
+
+                                    <img
+                                        src={movie.moviePosterUrl}
+                                        alt={movie.title}
+                                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                    />
+
+                                </div>
+
+                                <div className="border-t border-slate-200 p-3">
+
+                                    <h2 className="text-base font-bold text-slate-900 line-clamp-1">
+                                        {movie.title}
+                                    </h2>
+
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Streaming Now
+                                    </p>
+
+                                    <button
+                                        onClick={() => MovieCompleteDetailsPage(movie._id)}
+                                        className="mt-4 w-full rounded-xl bg-red-600 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-red-700 active:scale-[0.98]">
+                                        ▶ Watch Now
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        ))}
+
+                    </div>
+
                 </div>
+
             </div>
             <div className="border border-green-500 mt-2">
                 <div>
@@ -89,6 +169,14 @@ function HomePage() {
                 </div>
                 <div>
                     <h1>This is the upcoming section and it will be build later</h1>
+                </div>
+            </div>
+            <div className="border border-green-500 mt-2">
+                <div>
+                    <h1>Theather Section</h1>
+                </div>
+                <div>
+                    <h1>This is the theather section and it will be build later</h1>
                 </div>
             </div>
             <footer className="fixed bottom-0 left-0 w-full h-20 bg-white border-t border-blue-500 shadow-lg rounded-lg">

@@ -23,6 +23,18 @@ function addNewMovieValidation(movieDetails) {
     if (!movieDetails.movieDirector?.trim()) {
         errors.movieDirector = "*Movie Director is required";
     }
+    if(!movieDetails.productionHouse?.trim()){
+        errors.productionHouse = "*Movie Production House is required"
+    }
+    if(!movieDetails.producer?.trim()){
+        errors.producer = "*Movie Producer is required"
+    }
+    if(!movieDetails.writer?.trim()){
+        errors.writer = "*Movie Writter is required"
+    }
+    if(!movieDetails.musicDirector?.trim()){
+        errors.musicDirector = "*Movie Music Director is required"
+    }
 
     if (!movieDetails.movieReleaseDate) {
         errors.movieReleaseDate = "*Movie Release Date is required";
@@ -72,6 +84,7 @@ function addNewMovieValidation(movieDetails) {
     if (!movieDetails.movieStreamingUrl && movieDetails.movieAvailability !== "Theatre") {
         errors.movieStreamingUrl = "*Movie Streaming URL is required";
     }
+
 
     return errors;
 }
