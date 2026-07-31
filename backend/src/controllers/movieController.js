@@ -4,8 +4,10 @@ import { Movie } from "../models/movieModal.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 import ApiError from "../utils/errorHandling.js";
 import { json } from "stream/consumers";
+import mongoose from "mongoose";
 
-const addMovie = asyncHandler(async (req, res, next) => {
+
+const createMovie = asyncHandler(async (req, res, next) => {
 
     const adminData = req.admin
     if (adminData.role !== "admin") {
@@ -17,7 +19,7 @@ const addMovie = asyncHandler(async (req, res, next) => {
     console.log("Data from body are: ", req.body)
     console.log("Data from files are: ", req.files)
 
-    const { movieTitle, movieDescription, movieDuration, movieReleaseDate, movieIMDbRating, movieGenre, movieLanguage, movieActors, movieDirector, movieAgeRating, movieAvailability, movieTrailerUrl, movieStreamingUrl } = req.body
+    const { movieTitle, movieDescription, movieDuration, movieReleaseDate, movieIMDbRating, movieGenre, movieLanguage, movieActors, movieDirector, movieAgeRating, movieAvailability, movieTrailerUrl, movieStreamingUrl, movieProductionHouse, movieProducer, movieWriter, movieMusicDirector } = req.body
 
     const bannerFile = req.files.find(
         (file) => file.fieldname === "bannerUrl"
@@ -70,6 +72,18 @@ const addMovie = asyncHandler(async (req, res, next) => {
     if (!movieTrailerUrl) {
         throw new ApiError(400, "Movie trailer url is required")
     }
+    if (!movieProductionHouse || !movieProductionHouse.trim()) {
+        throw new ApiError(400, "Movie Production House is required")
+    }
+    if (!movieWriter || !movieWriter.trim()) {
+        throw new ApiError(400, "Movie Writter is required")
+    }
+    if (!movieMusicDirector || !movieMusicDirector.trim()) {
+        throw new ApiError(400, "Movie music director is required")
+    }
+    if (!movieProducer || !movieProducer.trim()) {
+        throw new ApiError(400, "Movie Producer is required")
+    }
 
     console.log("Title is: ", movieTitle)
     console.log("Description is: ", movieDescription)
@@ -84,6 +98,10 @@ const addMovie = asyncHandler(async (req, res, next) => {
     console.log("IMDb rating is: ", movieIMDbRating)
     console.log("Movie Url is: ", movieStreamingUrl)
     console.log("Movie trailer url is: ", movieTrailerUrl)
+    console.log("Producer is: ", movieProducer)
+    console.log("Movie Writter is: ", movieWriter)
+    console.log("Music Director is: ", movieMusicDirector)
+    console.log("Production House is: ", movieProductionHouse)
 
     const movieCast = JSON.parse(movieActors);
 
@@ -142,7 +160,11 @@ const addMovie = asyncHandler(async (req, res, next) => {
         availabilityType: movieAvailability,
         streamingVideoUrl: movieStreamingUrl.trim(),
         movietrailerUrl: movieTrailerUrl.trim(),
-        imdbRating: movieIMDbRating
+        imdbRating: movieIMDbRating,
+        productionHouse: movieProductionHouse.trim(),
+        producer: movieProducer.trim(),
+        writer: movieWriter.trim(),
+        musicDirector: movieMusicDirector.trim()
     })
 
     if (!createMovie) {
@@ -156,18 +178,27 @@ const addMovie = asyncHandler(async (req, res, next) => {
 
 })
 
-const giveAllMovieByAdmin = asyncHandler(async (req, res, next) => {
+const giveAllActiveMovieByAdmin = asyncHandler(async (req, res, next) => {
 
     const adminData = req.admin
     if (adminData.role !== "admin") {
         throw new ApiError(403, "Forbidden Admin")
     }
 
+    const { availabilityType } = req.query
+
+    console.log("availabilityType value from url in active movie search is: ", availabilityType)
+
     console.log("Admin role from middleware is: ", adminData.role)
     console.log("Admin id from middleware is: ", adminData._id)
 
     const allMovie = await Movie.find({
-        createdBy: adminData._id
+        createdBy: adminData._id,
+        isDeleted: false,
+        $or: [
+            { availabilityType: availabilityType },
+            { availabilityType: "Both" }
+        ]
     })
 
     console.log("All the movie are: ", allMovie)
@@ -175,6 +206,34 @@ const giveAllMovieByAdmin = asyncHandler(async (req, res, next) => {
     return res.status(200)
         .json(new ApiResponse(200, "All movie fetched", { movies: allMovie }))
 
+})
+
+const getAllInActiveMovieByAdmin = asyncHandler(async (req, res, next) => {
+    const adminData = req.admin
+    if (adminData.role !== "admin") {
+        throw new ApiError(403, "Forbidden Admin")
+    }
+
+    const { availabilityType } = req.query
+    console.log("availabilityType from the url to find inActive movie: ", availabilityType)
+
+    console.log("Admin role from middleware is: ", adminData.role)
+    console.log("Admin id from middleware is: ", adminData._id)
+
+    const allInActiveMovie = await Movie.find({
+        createdBy: adminData._id,
+        isDeleted: true,
+        $or: [
+            { availabilityType: availabilityType },
+            { availabilityType: "Both" }
+        ]
+
+    })
+
+    console.log("All in active movies are: ", allInActiveMovie)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "All Inactive Movie fetched", { movies: allInActiveMovie }))
 })
 
 const getMovieDetails = asyncHandler(async (req, res, next) => {
@@ -193,7 +252,7 @@ const getMovieDetails = asyncHandler(async (req, res, next) => {
         .json(new ApiResponse(200, "Movie Details fetched", findMovie))
 })
 
-const getAllMovie = asyncHandler(async (req, res, next) => {
+const getStreamingMovie = asyncHandler(async (req, res, next) => {
 
     const allMovie = await Movie.find({
         $or: [
@@ -208,4 +267,211 @@ const getAllMovie = asyncHandler(async (req, res, next) => {
         .json(new ApiResponse(200, "All movie fetched", allMovie))
 })
 
-export { addMovie, giveAllMovieByAdmin, getMovieDetails, getAllMovie }
+const getTheatreMovies = asyncHandler(async (req, res, next) => {
+
+    const allmovie = await Movie.find({
+        $or: [
+            { availabilityType: "Theatre" },
+            { availabilityType: "Both" }
+        ]
+    })
+        .select("-createdBy -description -director -genre -cast -language")
+
+    console.log("All movies are: ", allmovie)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Theatre movies fetched", allmovie))
+
+})
+
+const editMovie = asyncHandler(async (req, res, next) => {
+
+    const adminData = req.admin
+    if (adminData.role !== "admin") {
+        throw new ApiError(403, "Forbidden Admin")
+    }
+
+    console.log("Admin id is: ", adminData._id)
+
+    const { movieId } = req.params;
+
+    if (!movieId || !mongoose.Types.ObjectId.isValid(movieId)) {
+        throw new ApiError(400, "Invalid movie id")
+    }
+
+    const findMovie = await Movie.findOne({
+        createdBy: adminData._id,
+        _id: movieId
+    })
+
+    if (!findMovie) {
+        throw new ApiError(404, "No Movie Found")
+    }
+
+    if (Object.keys(req.body || {}).length === 0 && (!req.files || Object.keys(req.files).length === 0)) {
+        throw new ApiError(400, "Please provide at least one field to update.");
+    }
+
+    console.log("Req body is from the edit movie api: ", req.body);
+    console.log("Ref files from the edit movie url: ", req.files);
+
+    const { title, description, duration, releaseDate, imdbRating, genre, language, cast, director, ageRating,
+        availabilityType, streamingVideoUrl, movietrailerUrl, productionHouse, producer, writer, musicDirector } = req.body
+
+    const moviePosterUrl = req.files?.moviePosterUrl?.[0];
+    const movieBannerUrl = req.files?.bannerUrl?.[0];
+
+    if (title && title.trim()) {
+        findMovie.title = title.trim()
+    }
+    if (description && description.trim()) {
+        findMovie.description = description.trim()
+    }
+    if (moviePosterUrl && moviePosterUrl?.path) {
+        const moviePosterSecure_Url = await uploadOnCloudinary(moviePosterUrl?.path)
+        if (!moviePosterSecure_Url || !moviePosterSecure_Url.secure_url) {
+            throw new ApiError(500, "Failed to upload movie poster");
+        }
+        findMovie.moviePosterUrl = moviePosterSecure_Url.secure_url
+    }
+    if (movieBannerUrl && movieBannerUrl?.path) {
+        const movieBannerSecure_Url = await uploadOnCloudinary(movieBannerUrl?.path)
+        if (!movieBannerSecure_Url || !movieBannerSecure_Url.secure_url) {
+            throw new ApiError(500, "Failed to upload movie banner")
+        }
+        findMovie.movieBannerUrl = movieBannerSecure_Url.secure_url;
+    }
+    if (duration) {
+        findMovie.duration = duration
+    }
+    if (releaseDate) {
+        findMovie.releaseDate = releaseDate
+    }
+    if (imdbRating) {
+        findMovie.imdbRating = imdbRating
+    }
+    if (genre) {
+        findMovie.genre = JSON.parse(genre)
+    }
+    if (language) {
+        findMovie.language = JSON.parse(language)
+    }
+    if (cast) {
+        findMovie.cast = JSON.parse(cast)
+    }
+    if (director && director.trim()) {
+        findMovie.director = director.trim()
+    }
+    if (ageRating && ageRating.trim()) {
+        findMovie.ageRating = ageRating.trim()
+    }
+    if (availabilityType && availabilityType.trim()) {
+        findMovie.availabilityType = availabilityType.trim()
+    }
+    if (streamingVideoUrl && streamingVideoUrl.trim()) {
+        findMovie.streamingVideoUrl = streamingVideoUrl.trim()
+    }
+    if (movietrailerUrl && movietrailerUrl.trim()) {
+        findMovie.movietrailerUrl = movietrailerUrl.trim()
+    }
+    if (productionHouse && productionHouse.trim()) {
+        findMovie.productionHouse = productionHouse.trim()
+    }
+    if (producer && producer.trim()) {
+        findMovie.producer = producer.trim()
+    }
+    if (writer && writer.trim()) {
+        findMovie.writer = writer.trim()
+    }
+    if (musicDirector && musicDirector.trim()) {
+        findMovie.musicDirector = musicDirector.trim()
+    }
+
+    await findMovie.save()
+
+    const movieDetails = await Movie.findById(movieId)
+        .select("-createdBy")
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Movie Details Edited", movieDetails))
+
+})
+
+const DeActivateMovie = asyncHandler(async (req, res, next) => {
+    const adminData = req.admin
+    if (!adminData || adminData.role !== "admin") {
+        throw new ApiError(403, "Forbidden Admin")
+    }
+
+    console.log("Admin data is: ", adminData._id)
+
+    const { movieId } = req.params
+
+    if (!movieId || !mongoose.Types.ObjectId.isValid(movieId)) {
+        throw new ApiError(400, "Invalid movie id")
+    }
+
+    const findMovie = await Movie.findOne({
+        createdBy: adminData._id,
+        _id: movieId
+    })
+
+    if (!findMovie) {
+        throw new ApiError(404, "No Movie Found")
+    }
+
+    console.log("Movie Details to delete is: ", findMovie)
+
+    if (findMovie.isDeleted) {
+        throw new ApiError(400, "Movie is already deleted");
+    }
+
+    findMovie.isDeleted = true
+
+    await findMovie.save()
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Movie inActivated Successfully", {
+            movieId: findMovie._id,
+            isDeleted: findMovie.isDeleted
+        }))
+
+})
+
+const activateMovie = asyncHandler(async (req, res, next) => {
+    const adminData = req.admin
+    if (adminData.role !== "admin" || !adminData) {
+        throw new ApiError(403, "Forbidden Admin")
+    }
+
+    console.log("Admin role is: ", adminData.role)
+    console.log("Admin id is: ", adminData._id)
+
+    const { movieId } = req.params
+
+    const findMovie = await Movie.findOne({
+        _id: movieId,
+        createdBy: adminData._id
+    })
+
+    if (!findMovie) {
+        throw new ApiError(404, "No Movie Found")
+    }
+
+    console.log("Movie details to make active is: ", findMovie)
+
+    if (!findMovie.isDeleted) {
+        throw new ApiError(400, "Movie is already added");
+    }
+
+    findMovie.isDeleted = false;
+    await findMovie.save()
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Movie activated successfully", {
+            movieId: findMovie._id,
+            isDeleted: findMovie.isDeleted
+        }))
+})
+
+export { createMovie, giveAllActiveMovieByAdmin, getAllInActiveMovieByAdmin, getMovieDetails, getStreamingMovie, getTheatreMovies, editMovie, DeActivateMovie, activateMovie }

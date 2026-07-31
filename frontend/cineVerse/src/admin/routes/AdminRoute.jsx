@@ -10,6 +10,7 @@ import AdminProfilePage from "../pages/Admin/AdminProfilePage";
 import AddNewMovies from "../pages/Admin/AddNewMovies";
 import MoviesPage from "../pages/Admin/MoviesPage";
 import MovieCompleteDetailsPage from "../pages/Admin/MovieCompleteDetailsPage";
+import EditMovieDetails from "../pages/Admin/EditMovieDetails";
 
 const adminRoutes = [
     {
@@ -67,6 +68,10 @@ const adminRoutes = [
                     {
                         path: "panel/movies/:movieDetailsId",
                         element: <MovieCompleteDetailsPage />
+                    },
+                    {
+                        path: "panel/movies/:movieDetailsId/edit-movie",
+                        element: <EditMovieDetails />
                     }
                 ]
             },

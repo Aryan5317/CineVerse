@@ -1,6 +1,7 @@
-async function getAllMovie() {
+async function getAllActiveMovie(availabilityType) {
+    console.log("availabilityType value to send to backend is: ", availabilityType)
     try {
-        const response = await fetch("http://localhost:8000/cineVerse/app/api/movies/get-all-movie", {
+        const response = await fetch(`http://localhost:8000/cineVerse/app/api/movies/all-active-movie?availabilityType=${availabilityType}`, {
             method: "Get",
             credentials: "include"
         })
@@ -18,4 +19,4 @@ async function getAllMovie() {
 }
 
 
-export default getAllMovie
+export default getAllActiveMovie

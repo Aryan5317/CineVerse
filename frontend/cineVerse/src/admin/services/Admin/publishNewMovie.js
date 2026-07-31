@@ -17,6 +17,10 @@ async function publishNewMovie(movieDetails) {
     dataToSend.append("movieAvailability", movieDetails.movieAvailability);
     dataToSend.append("movieTrailerUrl", movieDetails?.movieTrailerUrl);
     dataToSend.append("movieStreamingUrl", movieDetails?.movieStreamingUrl);
+    dataToSend.append("movieProductionHouse", movieDetails.productionHouse);
+    dataToSend.append("movieProducer", movieDetails.producer);
+    dataToSend.append("movieWriter", movieDetails.writer);
+    dataToSend.append("movieMusicDirector", movieDetails.musicDirector)
 
     dataToSend.append("movieGenre", JSON.stringify(movieDetails.movieGenre));
     dataToSend.append("movieLanguage", JSON.stringify(movieDetails.movieLanguage));
@@ -29,7 +33,7 @@ async function publishNewMovie(movieDetails) {
     }
 
     try {
-        const response = await fetch("http://localhost:8000/cineVerse/app/api/movies/addMovie", {
+        const response = await fetch("http://localhost:8000/cineVerse/app/api/movies/createMovie", {
             method: "POST",
             credentials: "include",
             body: dataToSend

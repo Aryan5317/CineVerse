@@ -1,8 +1,7 @@
 import React from "react"
 import { useState } from "react"
 
-function AddMovieGenreOption({ setMovieDetails }) {
-
+function AddMovieGenreOption({ movieDetails, setMovieDetails }) {
 
     const AddNewMovieGnere = (e) => {
         const { name, value, checked } = e.target
@@ -77,6 +76,7 @@ function AddMovieGenreOption({ setMovieDetails }) {
                         >
                             <input
                                 type="checkbox"
+                                checked={movieDetails.movieGenre.includes(genre)}
                                 value={genre}
                                 name="movieGenre"
                                 onChange={AddNewMovieGnere}

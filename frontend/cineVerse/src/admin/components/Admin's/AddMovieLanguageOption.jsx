@@ -1,9 +1,9 @@
 import React from "react"
 import { useState } from "react"
 
-function AddMovieLanguageOption({ setMovieDetails }) {
+function AddMovieLanguageOption({ movieDetails, setMovieDetails }) {
 
-    
+
     const AddNewMovieLanguage = (e) => {
         const { name, value, checked } = e.target
         console.log("Checked Value is: ", checked)
@@ -96,6 +96,7 @@ function AddMovieLanguageOption({ setMovieDetails }) {
 
                                 <input
                                     type="checkbox"
+                                    checked={movieDetails?.movieLanguage?.includes(language) || false}
                                     value={language}
                                     name="movieLanguage"
                                     onChange={AddNewMovieLanguage}

@@ -1,7 +1,7 @@
 import React from "react";
 import AdminTopBar from "../../components/Admin's/AdminTopBar";
 import AdminMenuOption from "../../components/Admin's/AdminMenuOption";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import currentAdminDetails from "../../services/currentAdminDetails.js";
 import { useNavigate } from "react-router-dom";
 
@@ -92,7 +92,7 @@ function HomePage() {
             <div className="min-h-screen bg-slate-50">
 
                 <div>
-                    <AdminTopBar setMenuButton={setMenuButton} />
+                    <AdminTopBar  setMenuButton={setMenuButton} menuButton={menuButton}/>
                 </div>
 
                 <div

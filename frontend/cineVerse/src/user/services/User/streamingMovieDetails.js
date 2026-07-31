@@ -1,6 +1,6 @@
 async function streamingMovieDetails() {
     try {
-        const response = await fetch("http://localhost:8000/cineVerse/app/api/movies/users/all-movie", {
+        const response = await fetch("http://localhost:8000/cineVerse/app/api/movies/users/all-streaming", {
             method: "GET",
             credentials: "include"
         })

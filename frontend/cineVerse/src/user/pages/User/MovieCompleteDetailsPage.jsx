@@ -1,10 +1,16 @@
 import React from "react"
 import { useParams } from "react-router-dom"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import movieDetails from "../../services/User/getMovieDetails.js"
 import UserSectionButton from "../../components/Users/UserSectionButton.jsx"
+import { propContext } from "../../context/User/contextApi.js"
+import RegisterPage from "./RegisterPage.jsx"
+import { useNavigate } from "react-router-dom"
 
 function MovieCompleteDetailsPage() {
+
+    const navigate = useNavigate()
+    const { isLoggedIn } = useContext(propContext)
 
     const { movieId } = useParams()
     const [movieData, setMovieData] = useState({
@@ -15,13 +21,17 @@ function MovieCompleteDetailsPage() {
         createdAt: "",
         description: "",
         director: "",
+        producer: "",
+        productionHouse: "",
+        writer: "",
+        musicDirector: "",
         duration: "",
         dislikesCount: "",
         genre: [],
         language: [],
         likesCount: "",
-        movieBannerUrl: "",
-        moviePosterUrl: "",
+        movieBannerUrl: null,
+        moviePosterUrl: null,
         movietrailerUrl: "",
         releaseDate: "",
         streamingVideoUrl: "",
@@ -45,18 +55,21 @@ function MovieCompleteDetailsPage() {
         getMovieDetails()
     }, [])
 
-    console.log("Movie id: ", movieId)
+    const MovieBackHomePage = () => {
+        navigate("/")
+    }
 
     return (
         <>
-            <div className="min-h-screen bg-slate-50 pb-24">
+            {isLoggedIn && <div className="min-h-screen bg-slate-50 pb-24">
 
-                <div className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b border-slate-200 bg-white/90 px-4 backdrop-blur-md">
+                <div className="fixed top-0 left-0 right-0 z-50 flex h-16 w-full items-center border-b border-slate-300 bg-white px-5 shadow-sm">
 
                     <button
-                        className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 active:scale-95"
+                        onClick={() => MovieBackHomePage()}
+                        className="flex items-center gap-2 text-base font-semibold text-slate-700 transition-colors duration-200 hover:text-blue-600"
                     >
-                        <span className="text-lg">←</span>
+                        <span className="text-xl">←</span>
 
                         <span>Back</span>
                     </button>
@@ -65,43 +78,43 @@ function MovieCompleteDetailsPage() {
 
                 <div className="relative">
 
-                    <div className="relative h-72 bg-black overflow-hidden">
+                    <div className="relative h-72 overflow-hidden bg-black">
 
                         <img
-                            src={movieData.movieBannerUrl}
-                            alt={movieData.title}
-                            className="w-full h-full object-cover"
+                            src={movieData?.movieBannerUrl}
+                            alt={movieData?.title}
+                            className="h-full w-full object-cover"
                         />
 
                     </div>
 
                     <div className="relative -mt-16 flex flex-col items-center px-5">
 
-                        <div className="w-40 h-56 rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-white">
+                        <div className="h-56 w-40 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-2xl">
 
                             <img
                                 src={movieData.moviePosterUrl}
                                 alt="Movie Poster"
-                                className="w-full h-full object-cover"
+                                className="h-full w-full object-cover shadow-2xl"
                             />
 
                         </div>
 
-                        <h1 className="mt-5 text-3xl font-extrabold text-slate-900 text-center">
+                        <h1 className="mt-5 text-center text-3xl font-extrabold text-slate-900">
                             {movieData.title}
                         </h1>
 
                         <div className="mt-3 flex flex-wrap justify-center gap-2">
 
-                            <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm font-semibold">
+                            <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-semibold text-yellow-700">
                                 ⭐ {movieData.imdbRating}
                             </span>
 
-                            <span className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-sm font-semibold">
+                            <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-600">
                                 {movieData.ageRating}
                             </span>
 
-                            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                            <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700">
                                 {movieData.duration} min
                             </span>
 
@@ -113,7 +126,7 @@ function MovieCompleteDetailsPage() {
 
                                 <span
                                     key={genre}
-                                    className="px-3 py-1 rounded-full bg-slate-200 text-slate-700 text-sm font-medium"
+                                    className="rounded-full bg-slate-200 px-3 py-1 text-sm font-medium text-slate-700"
                                 >
                                     {genre}
                                 </span>
@@ -124,15 +137,85 @@ function MovieCompleteDetailsPage() {
 
                     </div>
 
+                    <div className="mt-6 flex flex-wrap justify-center gap-2">
+
+                        {movieData.availabilityType === "Theatre" && (
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                                <span>🎟️</span>
+                                <span>Tickets Available</span>
+                            </div>
+                        )}
+
+                        {movieData.availabilityType === "Both" && (
+                            <>
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                                    <span>🎟️</span>
+                                    <span>Tickets Available</span>
+                                </div>
+
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700">
+                                    <span>▶️</span>
+                                    <span>Streaming Available</span>
+                                </div>
+                            </>
+                        )}
+
+                    </div>
+
                 </div>
 
-                <div className="px-5 mt-8">
+                <div className="mt-8 space-y-6 px-5">
 
-                    <button
-                        className="w-full h-14 rounded-2xl bg-red-600 text-white text-lg font-bold shadow-lg active:scale-95 transition-all duration-200"
-                    >
-                        ▶ WATCH MOVIE
-                    </button>
+                    {(movieData.availabilityType === "Both" ||
+                        movieData.availabilityType === "Streaming") && (
+
+                            <button
+                                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-red-600 text-base font-bold text-white shadow-lg transition-all duration-200 active:scale-95"
+                            >
+                                <span className="text-lg">▶</span>
+                                <span>Watch Movie</span>
+                            </button>
+
+                        )}
+
+
+                    {
+                        (movieData.availabilityType === "Both" ||
+                            movieData.availabilityType === "Theatre") && (
+
+                            <div className="space-y-4">
+
+                                <button
+                                    className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-base font-bold text-white shadow-lg transition-all duration-200 active:scale-95"
+                                >
+                                    <span className="text-xl">🎟️</span>
+                                    <span>Book Tickets</span>
+                                </button>
+
+                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                                    <h2 className="text-lg font-bold text-slate-900">
+                                        Not Sure Yet?
+                                    </h2>
+
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        Watch the official trailer before booking your tickets and
+                                        decide if this movie is right for you.
+                                    </p>
+
+                                    <button
+                                        className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 font-semibold text-red-600 transition-all duration-200 hover:bg-red-100 active:scale-95"
+                                    >
+                                        <span>▶️</span>
+                                        <span>Watch Trailer</span>
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        )
+                    }
 
                 </div>
 
@@ -178,168 +261,190 @@ function MovieCompleteDetailsPage() {
 
                 <div className="w-full h-px bg-slate-200 my-8"></div>
 
-                <div className="px-5">
 
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden px-5">
 
-                        <div className="px-5 py-5 border-b border-slate-200">
-                            <h1 className="text-xl font-bold text-slate-900">
-                                Movie Information
+                    <div className="px-5 py-5 border-b border-slate-200">
+                        <h1 className="text-xl font-bold text-slate-900">
+                            Movie Information
+                        </h1>
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="font-medium text-slate-600">
+                            IMDb Rating
+                        </h1>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg text-yellow-500">⭐</span>
+                            <h1 className="font-bold text-slate-900">
+                                {movieData?.imdbRating}
                             </h1>
                         </div>
 
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    </div>
 
-                            <h1 className="font-medium text-slate-600">
-                                IMDb Rating
-                            </h1>
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
 
-                            <div className="flex items-center gap-2">
-                                <span className="text-yellow-500 text-lg">⭐</span>
-                                <h1 className="font-bold text-slate-900">
-                                    {movieData?.imdbRating}
-                                </h1>
-                            </div>
+                        <h1 className="font-medium text-slate-600">
+                            Runtime
+                        </h1>
 
-                        </div>
-
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-
-                            <h1 className="font-medium text-slate-600">
-                                Runtime
-                            </h1>
-
-                            <div className="flex items-center gap-1">
-                                <h1 className="font-semibold text-slate-900">
-                                    {movieData.duration}
-                                </h1>
-                                <span className="text-slate-500">
-                                    min
-                                </span>
-                            </div>
-
-                        </div>
-
-                        <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100">
-
-                            <h1 className="font-medium text-slate-600 mt-1">
-                                Language
-                            </h1>
-
-                            <div className="flex flex-wrap justify-end gap-2">
-
-                                {movieData.language.map((lang) => (
-
-                                    <div
-                                        key={lang}
-                                        className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium"
-                                    >
-                                        {lang}
-                                    </div>
-
-                                ))}
-
-                            </div>
-
-                        </div>
-
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-
-                            <h1 className="font-medium text-slate-600">
-                                Subtitle
-                            </h1>
-
-                            <div className="px-3 py-1 rounded-full bg-slate-100">
-                                <h1 className="text-sm font-medium text-slate-700">
-                                    English
-                                </h1>
-                            </div>
-
-                        </div>
-
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-
-                            <h1 className="font-medium text-slate-600">
-                                Release Date
-                            </h1>
-
-                            <h1 className="font-semibold text-slate-900 text-right">
-                                {new Date(movieData.releaseDate).toLocaleDateString("en-IN", {
-                                    timeZone: "Asia/Kolkata",
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                })}
-                            </h1>
-
-                        </div>
-
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-
-                            <h1 className="font-medium text-slate-600">
-                                Certificate
-                            </h1>
-
-                            <div className="px-3 py-1 rounded-full bg-red-50">
-                                <h1 className="text-sm font-semibold text-red-600">
-                                    {movieData.ageRating}
-                                </h1>
-                            </div>
-
-                        </div>
-
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-
-                            <h1 className="font-medium text-slate-600">
-                                Quality
-                            </h1>
-
-                            <div className="px-3 py-1 rounded-full bg-green-50">
-                                <h1 className="text-sm font-semibold text-green-700">
-                                    4K HDR
-                                </h1>
-                            </div>
-
-                        </div>
-
-                        <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100">
-
-                            <h1 className="font-medium text-slate-600 mt-1">
-                                Genre
-                            </h1>
-
-                            <div className="flex flex-wrap justify-end gap-2">
-
-                                {movieData.genre.map((gen) => (
-
-                                    <div
-                                        key={gen}
-                                        className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-medium"
-                                    >
-                                        {gen}
-                                    </div>
-
-                                ))}
-
-                            </div>
-
-                        </div>
-
-                        <div className="flex items-center justify-between px-5 py-4">
-
-                            <h1 className="font-medium text-slate-600">
-                                Country
-                            </h1>
-
+                        <div className="flex items-center gap-1">
                             <h1 className="font-semibold text-slate-900">
-                                INDIA
+                                {movieData.duration}
                             </h1>
+                            <span className="text-slate-500">
+                                min
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="mt-1 font-medium text-slate-600">
+                            Language
+                        </h1>
+
+                        <div className="flex flex-wrap justify-end gap-2">
+
+                            {movieData.language.map((lang) => (
+
+                                <div
+                                    key={lang}
+                                    className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700"
+                                >
+                                    {lang}
+                                </div>
+
+                            ))}
 
                         </div>
 
                     </div>
 
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="font-medium text-slate-600">
+                            Subtitle
+                        </h1>
+
+                        <div className="rounded-full bg-slate-100 px-3 py-1">
+                            <h1 className="text-sm font-medium text-slate-700">
+                                English
+                            </h1>
+                        </div>
+
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="font-medium text-slate-600">
+                            Release Date
+                        </h1>
+
+                        <h1 className="text-right font-semibold text-slate-900">
+                            {new Date(movieData.releaseDate).toLocaleDateString("en-IN", {
+                                timeZone: "Asia/Kolkata",
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                            })}
+                        </h1>
+
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="font-medium text-slate-600">
+                            Certificate
+                        </h1>
+
+                        <div className="rounded-full bg-red-50 px-3 py-1">
+                            <h1 className="text-sm font-semibold text-red-600">
+                                {movieData.ageRating}
+                            </h1>
+                        </div>
+
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="font-medium text-slate-600">
+                            Quality
+                        </h1>
+
+                        <div className="rounded-full bg-green-50 px-3 py-1">
+                            <h1 className="text-sm font-semibold text-green-700">
+                                4K HDR
+                            </h1>
+                        </div>
+
+                    </div>
+
+                    <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="mt-1 font-medium text-slate-600">
+                            Genre
+                        </h1>
+
+                        <div className="flex flex-wrap justify-end gap-2">
+
+                            {movieData.genre.map((gen) => (
+
+                                <div
+                                    key={gen}
+                                    className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700"
+                                >
+                                    {gen}
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="font-medium text-slate-600">
+                            Country
+                        </h1>
+
+                        <h1 className="font-semibold text-slate-900">
+                            INDIA
+                        </h1>
+
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
+                        <h1 className="font-medium text-slate-600">
+                            Director
+                        </h1>
+
+                        <h1 className="max-w-[60%] text-right font-semibold text-slate-900">
+                            {movieData.director}
+                        </h1>
+
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-4">
+
+                        <h1 className="font-medium text-slate-600">
+                            Production House
+                        </h1>
+
+                        <h1 className="max-w-[60%] text-right font-semibold text-slate-900">
+                            {movieData.productionHouse}
+                        </h1>
+
+                    </div>
+
                 </div>
+
 
                 <div className="w-full h-px bg-slate-200 my-8"></div>
 
@@ -439,7 +544,7 @@ function MovieCompleteDetailsPage() {
                 <footer className="fixed bottom-0 left-0 w-full h-20 bg-white border-t border-blue-500 shadow-lg rounded-lg">
                     <UserSectionButton />
                 </footer>
-            </div>
+            </div >}
         </>
     )
 }

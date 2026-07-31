@@ -1,6 +1,6 @@
 import { RiNotification4Line, RiMenuFill } from "@remixicon/react";
 
-function AdminTopBar({setMenuButton }) {
+function AdminTopBar({ menuButton, setMenuButton }) {
 
     const SetMenuToggleEffect = () => {
         console.log("Admin menu is clicked")

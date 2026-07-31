@@ -91,7 +91,7 @@ const movieSchema = new Schema({
     ageRating: {
         type: String,
         enum: [
-            "U (Below 7)",
+            "U (Above 7)",
             "U (13+)",
             "U/A (16+)",
             "A (18+)"
@@ -130,6 +130,10 @@ const movieSchema = new Schema({
         type: String,
         requird: true,
         trim: true,
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true })
 
