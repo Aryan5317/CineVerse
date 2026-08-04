@@ -1,0 +1,19 @@
+export const nagalandDistricts = [
+  "Chümoukedima",
+  "Dimapur",
+  "Kiphire",
+  "Kohima",
+  "Longleng",
+  "Meluri",
+  "Mokokchung",
+  "Mon",
+  "Niuland",
+  "Noklak",
+  "Peren",
+  "Phek",
+  "Shamator",
+  "Tseminyü",
+  "Tuensang",
+  "Wokha",
+  "Zunheboto"
+];

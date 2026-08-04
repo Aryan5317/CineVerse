@@ -6,7 +6,6 @@ import ApiError from "../utils/errorHandling.js";
 import { json } from "stream/consumers";
 import mongoose from "mongoose";
 
-
 const createMovie = asyncHandler(async (req, res, next) => {
 
     const adminData = req.admin
@@ -104,9 +103,6 @@ const createMovie = asyncHandler(async (req, res, next) => {
     console.log("Production House is: ", movieProductionHouse)
 
     const movieCast = JSON.parse(movieActors);
-
-
-
 
     const moviePosterLocalPath = posterFile?.path
     if (!moviePosterLocalPath) {

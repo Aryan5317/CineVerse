@@ -1,0 +1,18 @@
+export const manipurDistricts = [
+  "Bishnupur",
+  "Chandel",
+  "Churachandpur",
+  "Imphal East",
+  "Imphal West",
+  "Jiribam",
+  "Kakching",
+  "Kamjong",
+  "Kangpokpi",
+  "Noney",
+  "Pherzawl",
+  "Senapati",
+  "Tamenglong",
+  "Tengnoupal",
+  "Thoubal",
+  "Ukhrul"
+];

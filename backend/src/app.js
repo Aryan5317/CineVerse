@@ -3,6 +3,7 @@ import cors from "cors"
 import userRouter from "./routes/userRoutes.js";
 import movieRouter from "./routes/movieRoute.js";
 import adminRouter from "./routes/adminRoute.js";
+import theatreRoute from "./routes/theatreRoute.js";
 import globalErrorHandler from "./utils/globalErrorHandle.js";
 import cookieParser from "cookie-parser"
 
@@ -19,6 +20,7 @@ app.use(cookieParser())
 app.use("/cineVerse/app/api/users", userRouter)
 app.use("/cineVerse/app/api/movies", movieRouter)
 app.use("/cineVerse/app/api/admin", adminRouter)
+app.use("/cineVerse/app/api/theatre", theatreRoute)
 
 app.get("/api/health", (req, res) => {
     res.status(200).json({
