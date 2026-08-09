@@ -4,6 +4,7 @@ import AdminMenuOption from "../../components/Admin's/AdminMenuOption";
 import { useEffect, useState, useContext } from "react";
 import currentAdminDetails from "../../services/currentAdminDetails.js";
 import { useNavigate } from "react-router-dom";
+import adminDashBoardDetails from "../../services/Admin/adminDashBoardService.js";
 
 function HomePage() {
 
@@ -11,6 +12,7 @@ function HomePage() {
     const [menuButton, setMenuButton] = useState(false)
     const [adminData, setAdminData] = useState([])
     const [adminLoginDateTime, setAdminLoginDateTime] = useState({})
+    const [dashBoardDetails, setDashBoardDetails] = useState({})
 
     const loginTime = [
         {
@@ -81,10 +83,35 @@ function HomePage() {
         }))
     }, [adminData])
 
+    useEffect(() => {
+        const dashBoardData = async () => {
+            try {
+                const adminDashBoardDetailsResponse = await adminDashBoardDetails()
+                console.log("Admin dashBoard data is: ", adminDashBoardDetailsResponse)
+                if (adminDashBoardDetailsResponse) {
+                    setDashBoardDetails(adminDashBoardDetailsResponse.data)
+                }
+            } catch (error) {
+                console.log("Error while fetching dashboard data")
+            }
+        }
+        dashBoardData()
+    }, [])
+
+    useEffect(() => {
+        console.log("DashBoard details printed is: ", dashBoardDetails)
+    }, [dashBoardDetails])
+
+
 
     const CreateMovies = () => {
         console.log("Add movie button is clicked")
         navigate("/admin/panel/movies/create-movie")
+    }
+
+    const ReviewTheatreRequest = () => {
+        console.log("Theatre review request button is clicked")
+        navigate("/admin/panel/theatre-request/pending")
     }
 
     return (
@@ -92,7 +119,7 @@ function HomePage() {
             <div className="min-h-screen bg-slate-50">
 
                 <div>
-                    <AdminTopBar  setMenuButton={setMenuButton} menuButton={menuButton}/>
+                    <AdminTopBar setMenuButton={setMenuButton} menuButton={menuButton} />
                 </div>
 
                 <div
@@ -179,7 +206,7 @@ function HomePage() {
                             <div className="mt-5">
 
                                 <h1 className="text-3xl font-bold text-blue-600">
-                                    Count
+                                    {dashBoardDetails.TotalMovie}
                                 </h1>
 
                             </div>
@@ -203,7 +230,7 @@ function HomePage() {
                             <div className="mt-5">
 
                                 <h1 className="text-3xl font-bold text-amber-500">
-                                    Count
+                                    {dashBoardDetails.TheatrePendingRequest}
                                 </h1>
 
                             </div>
@@ -284,7 +311,9 @@ function HomePage() {
 
                             </button>
 
-                            <button className="w-full rounded-xl border border-slate-300 bg-white py-3 font-semibold text-slate-700 transition hover:bg-slate-100 active:scale-95">
+                            <button
+                                onClick={ReviewTheatreRequest}
+                                className="w-full rounded-xl border border-slate-300 bg-white py-3 font-semibold text-slate-700 transition hover:bg-slate-100 active:scale-95">
 
                                 Review Theatre Requests
 

@@ -13,6 +13,7 @@ function LoginPage() {
         email: "",
         password: ""
     })
+
     const [passwordEyeButton, setPasswordEyeButton] = useState(false)
     const [loginErrors, setLoginErrors] = useState({})
     const [loginMessage, setLoginMessage] = useState(false)
@@ -70,6 +71,9 @@ function LoginPage() {
             if (loginDetailsResponse) {
                 console.log("Login Details response from backend is: ", loginDetailsResponse.data)
                 setLoginMessage(true)
+                setTimeout(() => {
+                    navigate("/theatre/home")
+                }, 1000);
             }
         } catch (error) {
             console.log("Error from backend while login is: ", error)
@@ -136,7 +140,6 @@ function LoginPage() {
                         <div className="mt-8 px-6">
 
                             <div>
-
                                 <label className="mb-2 block text-sm font-semibold text-slate-700">
                                     📧 Email Address
                                 </label>
@@ -147,13 +150,13 @@ function LoginPage() {
                                     placeholder="Enter your email"
                                     value={theatreLoginDetails.email}
                                     onChange={SetTheatreLoginEmail}
-                                    className="h-14 w-full rounded-2xl border border-slate-300 bg-slate-50 px-5 text-base text-slate-700 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                    className="h-14 w-full rounded-2xl border border-slate-300 bg-white px-5 text-sm text-slate-700 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                                 />
 
+                                {loginErrors.email && (<p className="mt-2 flex items-center gap-1 text-xs font-medium text-red-500"> {loginErrors.email} </p>)}
                             </div>
 
-                            <div className="mt-6">
-
+                            <div>
                                 <label className="mb-2 block text-sm font-semibold text-slate-700">
                                     🔒 Password
                                 </label>
@@ -166,21 +169,21 @@ function LoginPage() {
                                         placeholder="Enter your password"
                                         value={theatreLoginDetails.password}
                                         onChange={SetTheatreLoginPassword}
-                                        className="h-14 w-full rounded-2xl border border-slate-300 bg-slate-50 px-5 pr-14 text-base text-slate-700 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        className="h-14 w-full rounded-2xl border border-slate-300 bg-white px-5 pr-14 text-sm text-slate-700 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                                     />
 
                                     <button
                                         type="button"
                                         onClick={SetPasswordEyeButtonOption}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xl text-slate-500 transition-all duration-200 hover:text-blue-600 active:scale-90"
+                                        aria-label={passwordEyeButton ? "Hide password" : "Show password"}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-lg text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-blue-600 active:scale-90"
                                     >
-
                                         {passwordEyeButton ? <FiEye /> : <FiEyeOff />}
-
                                     </button>
 
                                 </div>
 
+                                {loginErrors.password && (<p className="mt-2 flex items-center gap-1 text-xs font-medium text-red-500"> {loginErrors.password} </p>)}
                             </div>
 
                             <div className="mt-4 flex justify-end">
@@ -194,14 +197,18 @@ function LoginPage() {
                                 </button>
 
                             </div>
+                            <div>
+                                <button
+                                    onClick={LoginButtonWork}
+                                    className="h-14 w-full rounded-2xl bg-blue-600 px-5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-blue-700 hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    Login
+                                </button>
 
-                            <button
-                                onClick={LoginButtonWork}
-                                className="mt-8 h-14 w-full rounded-2xl bg-blue-600 text-base font-bold text-white shadow-lg transition-all duration-300 hover:bg-blue-700 active:scale-95">
-
-                                Login
-
-                            </button>
+                                {loginErrors.message && (
+                                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-xs font-medium leading-5 text-red-600"> {loginErrors.message} </p>
+                                )}
+                            </div>
 
                             <div className="my-8 flex items-center">
 
@@ -215,7 +222,7 @@ function LoginPage() {
 
                             </div>
 
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
                                 <h1 className="text-lg font-bold text-slate-900">
                                     Need a Theatre Account?
@@ -227,10 +234,9 @@ function LoginPage() {
 
                                 <button
                                     onClick={RegisterButtonWork}
-                                    className="mt-5 h-12 w-full rounded-xl border border-blue-600 bg-white font-semibold text-blue-600 transition-all duration-300 hover:bg-blue-50 active:scale-95">
-
+                                    className="mt-5 h-12 w-full rounded-xl border border-blue-600 bg-white font-semibold text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:shadow-sm active:scale-[0.98]"
+                                >
                                     Register First
-
                                 </button>
 
                             </div>

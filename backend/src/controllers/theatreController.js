@@ -4,6 +4,19 @@ import ApiResponse from "../utils/apiResponse.js";
 import { Theatre } from "../models/theatreModal.js";
 import validator from "validator"
 import uploadOnCloudinary from "../utils/cloudinary.js";
+import sendEmail from "../utils/sendEmail.js";
+import jwt from "jsonwebtoken"
+
+const genrateAccessRefreshToken = async (user) => {
+    try {
+        const accessToken = await user.generateAccessToken()
+        const refreshToken = await user.generateRefreshToken()
+        return { accessToken, refreshToken }
+    } catch (error) {
+        console.log("Error while genrating the token: ", error)
+        throw error;
+    }
+}
 
 const registerTheatreOwner = asyncHandler(async (req, res, next) => {
 
@@ -207,8 +220,215 @@ const registerTheatreOwner = asyncHandler(async (req, res, next) => {
     console.log("Theater owner details is: ", newTheaterOwner)
     console.log("Theatre registeration completed")
 
+    await sendEmail({
+        to: ownerEmail,
+        subject: "CineVerse Theatre Registration Request Received",
+        html: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; color: #333; background-color: #ffffff;">
+
+    <h2 style="color: #2563eb; margin-bottom: 20px;">
+        Theatre Registration Request Received
+    </h2>
+
+    <p>Dear Theatre Owner,</p>
+
+    <p>
+        Thank you for registering your theatre with <strong>CineVerse</strong>.
+        We have successfully received your theatre registration request.
+    </p>
+
+    <div style="background-color: #eff6ff; padding: 15px; margin: 20px 0; border-left: 4px solid #2563eb;">
+
+        <p style="margin: 0 0 8px 0;">
+            <strong>Registration Status:</strong> Under Review
+        </p>
+
+        <p style="margin: 0;">
+            Your application has been submitted successfully and is currently
+            awaiting review by the CineVerse administration team.
+        </p>
+
+    </div>
+
+    <h3 style="color: #333;">
+        What Happens Next?
+    </h3>
+
+    <ol style="padding-left: 20px; line-height: 1.8;">
+
+        <li>
+            <strong>Your application will be reviewed by CineVerse.</strong>
+        </li>
+
+        <li>
+            Verification usually takes <strong>12–24 hours</strong>.
+        </li>
+
+        <li>
+            You will receive updates regarding your application
+            <strong>via email</strong>.
+        </li>
+
+        <li>
+            Once your registration is approved, you will receive your
+            <strong>login password through email</strong>.
+        </li>
+
+        <li>
+            After approval, you can log in to your
+            <strong>Theatre Dashboard</strong> from the CineVerse landing page.
+        </li>
+
+    </ol>
+
+    <div style="background-color: #f8fafc; padding: 15px; margin: 20px 0; border: 1px solid #e5e7eb;">
+
+        <p style="margin: 0;">
+            <strong>Important:</strong>
+            Please keep an eye on your registered email address for updates
+            regarding your theatre registration.
+        </p>
+
+    </div>
+
+    <p>
+        Thank you for choosing <strong>CineVerse</strong>.
+        We appreciate your interest in joining our platform.
+    </p>
+
+    <p>
+        Regards,<br>
+        <strong>CineVerse Administration Team</strong>
+    </p>
+
+</div>`
+    })
+
+
     return res.status(201)
         .json(new ApiResponse(201, "Owner Registered Successfully", {}))
 })
 
-export { registerTheatreOwner }
+const loginTheatreOwner = asyncHandler(async (req, res, next) => {
+
+    const { email, password } = req.body;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,15}$/;
+
+    if (!email || !email?.trim()) {
+        throw new ApiError(400, "Enter the email")
+    }
+    else if (!validator.isEmail(email?.trim())) {
+        throw new ApiError(400, "Enter correct email")
+    }
+
+    if (!password || !password?.trim()) {
+        throw new ApiError(400, "Enter the password")
+    }
+    else if (!passwordRegex.test(password?.trim())) {
+        throw new ApiError(400, "Enter correct password")
+    }
+
+    console.log("Email is: ", email)
+    console.log("Password is: ", password)
+
+    const findUser = await Theatre.findOne({
+        ownerEmail: email?.trim()
+    })
+        .select(" -ownerAadharNo -ownerPanNumber -theatreGSTNumber -ownerMobileNumber -ownerRefreshToken -ownerAlternateMobileNo -ownerAddress -ownerImage")
+
+    if (!findUser) {
+        throw new ApiError(404, "No any user Found.Register First")
+    }
+
+    if (findUser.theatreStatus !== "Approved") {
+        throw new ApiError(404, "Only Approved theatre user can login. Wait till Admin verify your details.")
+    }
+
+    console.log("User details is: ", findUser)
+
+    const { accessToken, refreshToken } = await genrateAccessRefreshToken(findUser)
+
+    findUser.ownerRefreshToken = refreshToken
+    await findUser.save();
+
+    const options = {
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+    }
+
+    return res.status(200)
+        .cookie("partnerAccessToken", accessToken, options)
+        .cookie("partnerRefreshToken", refreshToken, options)
+        .json(new ApiResponse(200, "Theatre User logined Successfully", { theatreOwnerDetails: findUser }))
+})
+
+const verifytheatreOwner = asyncHandler(async (req, res, next) => {
+    const theatreData = req.theatre.toObject()
+    console.log("Theatre data recived is: ", theatreData)
+    const { ownerRefreshToken, updatedAt, createdAt, ...theatreDetails } = theatreData
+    return res.status(200)
+        .json(new ApiResponse(200, "Theatre Details verified"), theatreDetails)
+})
+
+const updateIncomingToken = asyncHandler(async (req, res, next) => {
+    const incomingRefreshToken = req.cookies?.partnerRefreshToken
+    if (!incomingRefreshToken) {
+        throw new ApiError(401, "UnAuthorized Thetre User")
+    }
+    console.log("Incoming refresh Token is: ", incomingRefreshToken)
+
+    const theatreUserJwtVerify = await jwt.verify(incomingRefreshToken, process.env.THEATRE_REFRESH_TOKEN_SECRET)
+    const getTheatreUser = await Theatre.findById(theatreUserJwtVerify._id)
+        .select("-ownerPassword -ownerAadharNo -ownerPanNumber -theatreGSTNumber -ownerMobileNumber  -ownerAlternateMobileNo -ownerAddress -ownerImage")
+
+    if (!getTheatreUser) {
+        throw new ApiError(404, "No any Theatre User found")
+    }
+
+    if (getTheatreUser.ownerRefreshToken !== incomingRefreshToken) {
+        throw new ApiError(401, "Invalid Refresh Token")
+    }
+
+    const { accessToken, refreshToken } = genrateAccessRefreshToken(findUser)
+
+    getTheatreUser.ownerRefreshToken = refreshToken
+    await getTheatreUser.save()
+
+    const options = {
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+    }
+
+    return res.status(200)
+        .cookie("partnerAccessToken", accessToken, options)
+        .cookie("partnerRefreshToken", refreshToken, options)
+        .json(new ApiResponse(200, "Tokem refreshed Successfully", { theatreUserDetails: getTheatreUser }))
+})
+
+const getUserTheatres = asyncHandler(async (req, res, next) => {
+    const theatreData = req.theatre
+    if (!theatreData) {
+        throw new ApiError(403, "Forbidden User")
+    }
+
+    console.log("Theatre user id: ", theatreData._id);
+
+    const { theatreName, theatreIsBookingAvailable, theatreAddress } = theatreData
+
+    console.log("Theatre Name is: ", theatreName)
+    console.log("Theatre adress is: ", theatreAddress)
+    console.log("Theatre availability is: ", theatreIsBookingAvailable)
+
+    let theatreValue = {
+        theatreName: theatreName,
+        theatreAddress: theatreAddress,
+        theatreAvailability: theatreIsBookingAvailable
+    }
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Theatre data fetched",  [theatreValue]))
+
+})
+
+export { registerTheatreOwner, loginTheatreOwner, verifytheatreOwner, updateIncomingToken, getUserTheatres }

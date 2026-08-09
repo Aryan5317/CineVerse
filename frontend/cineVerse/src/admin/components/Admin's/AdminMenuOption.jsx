@@ -59,6 +59,7 @@ function AdminMenuOption() {
                 </NavLink>
 
                 <NavLink
+                    to="/admin/panel/theatre"
                     className={({ isActive }) => `w-full flex items-center gap-4 px-5 py-4 text-left transition-all duration-200 border-l-4 ${isActive
                         ? "bg-blue-50 border-blue-600 shadow-sm"
                         : "border-transparent hover:bg-slate-50 hover:border-blue-300"
@@ -67,7 +68,7 @@ function AdminMenuOption() {
                     <span className="text-2xl">🎭</span>
 
                     <h1 className="font-semibold tracking-wide text-slate-700">
-                        Theatre Requests
+                        Theatre
                     </h1>
 
                 </NavLink>

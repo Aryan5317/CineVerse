@@ -169,7 +169,7 @@ function RegisterComponent6() {
 
                                 <li className="flex gap-3">
                                     <span>✔️</span>
-                                    <span>Your application will be reviewed by CineVerse.</span>
+                                        <span>Your application will be reviewed by CineVerse.</span>
                                 </li>
 
                                 <li className="flex gap-3">

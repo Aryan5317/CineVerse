@@ -42,7 +42,7 @@ function AddNewMovies() {
 
     const MoveToLastPage = () => {
         console.log("Back button is clicked")
-        navigate("/admin/panel/dashboard")
+        navigate(-1)
     }
 
     const HandleMoviePosterUrl = (e) => {

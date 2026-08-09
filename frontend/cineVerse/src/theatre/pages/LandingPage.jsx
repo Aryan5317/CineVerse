@@ -175,7 +175,7 @@ function LandingPage() {
 
                                 <button
                                     onClick={NavigateLoginPage}
-                                    className="mt-6 h-14 w-full rounded-2xl border border-slate-300 bg-white text-base font-semibold text-slate-700 transition-all duration-300 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 active:scale-95">
+                                    className="mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-base font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-blue-300 active:scale-95">
 
                                     Login
 

@@ -3,8 +3,7 @@ import validator from "validator";
 function loginDetailsValidation(loginDetails) {
 
     const errors = {};
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>\/~`])[A-Za-z\d@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>\/~`]{8,15}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,15}$/;
 
     console.log("Theatre Login Details for validation is:", loginDetails);
 

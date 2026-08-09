@@ -11,6 +11,9 @@ import AddNewMovies from "../pages/Admin/AddNewMovies";
 import MoviesPage from "../pages/Admin/MoviesPage";
 import MovieCompleteDetailsPage from "../pages/Admin/MovieCompleteDetailsPage";
 import EditMovieDetails from "../pages/Admin/EditMovieDetails";
+import Theatres from "../pages/Admin/Theatres";
+import TheatreRequestPage from "../pages/Admin/TheatreRequestPage";
+import TheatrePendingRequestApplicationPage from "../pages/Admin/TheatrePendingRequestApplicationPage";
 
 const adminRoutes = [
     {
@@ -72,6 +75,18 @@ const adminRoutes = [
                     {
                         path: "panel/movies/:movieDetailsId/edit-movie",
                         element: <EditMovieDetails />
+                    },
+                    {
+                        path: "panel/theatre",
+                        element: <Theatres />
+                    },
+                    {
+                        path: "panel/theatre/pending-request",
+                        element: <TheatreRequestPage />
+                    },
+                    {
+                        path: "panel/theatre/pending-request/:requestId?",
+                        element: <TheatrePendingRequestApplicationPage />
                     }
                 ]
             },

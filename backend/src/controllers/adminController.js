@@ -4,6 +4,9 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { Admin } from "../models/adminModal.js";
 import validator from "validator"
 import jwt from "jsonwebtoken"
+import { Movie } from "../models/movieModal.js";
+import { Theatre } from "../models/theatreModal.js";
+import sendEmail from "../utils/sendEmail.js";
 
 const genrateAccessRefreshToken = (findAdmin) => {
     try {
@@ -408,7 +411,401 @@ const deactivateAdmin = asyncHandler(async (req, res, next) => {
         .json(new ApiResponse(200, "Admin is deactivated", findAdmin))
 })
 
+const adminDashBoard = asyncHandler(async (req, res, next) => {
+    const adminData = req.admin
+    if (!adminData || adminData.role !== "admin") {
+        throw new ApiError(401, "UnAuthorized Admin")
+    }
+    console.log("Admin id is: ", adminData._id)
+    const movieCount = await Movie.find({
+        createdBy: adminData._id
+    })
+
+    console.log("Total Movie Count is: ", movieCount.length)
+
+    const theatreRequestCount = await Theatre.find({
+        theatreStatus: "Pending"
+    })
+
+    console.log("Theatre Request count is: ", theatreRequestCount.length)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Dashboard Data fetched Successfully", {
+            TotalMovie: movieCount.length,
+            TheatrePendingRequest: theatreRequestCount.length
+        }))
+})
+
+const theatrePendingRequest = asyncHandler(async (req, res, next) => {
+    const adminData = req.admin
+    if (!adminData || adminData.role !== "admin") {
+        throw new ApiError(403, "Forbidden Error")
+    }
+    console.log("Admin id is: ", adminData._id)
+
+    const { theatreStatus } = req.query
+    console.log("Theatre Status is: ", theatreStatus)
+
+    let query = {};
+
+    if (theatreStatus === "Pending") {
+        query.theatreStatus = "Pending";
+    } else if (theatreStatus === "Resubmitted") {
+        query.theatreStatus = "NeedMoreDocuments";
+    } else if (theatreStatus === "Both") {
+        query.theatreStatus = {
+            $in: ["Pending", "NeedMoreDocuments"]
+        };
+    }
+
+    const fetchPendingRequest = await Theatre.find(query)
+        .select("-ownerPassword -ownerRefreshToken -theatreApprovedBy -ownerImage -ownerAadharNo -ownerPanNumber -theatreGSTNumber -theatreImages");
+
+    console.log("Pending Theatre request is: ", fetchPendingRequest)
+    return res.status(200)
+        .json(new ApiResponse(200, "Pending Request Fetched", { pendingRequest: fetchPendingRequest }))
+})
+
+const completeTheatreRequestDetails = asyncHandler(async (req, res, next) => {
+    const adminData = req.admin
+    if (!adminData || adminData.role !== "admin") {
+        throw new ApiError(403, "Forbidden Admin")
+    }
+
+    console.log("Admin id: ", adminData._id)
+    const { id } = req.params
+
+    const { status } = req.query;
+
+    console.log("Status is: ", status)
+    let querry = ""
+
+    if (status === "Pending") {
+        querry = "Pending"
+    } else if (status === "NeedMoreDocuments") {
+        querry = "NeedMoreDocuments"
+    }
+
+    const findTheatre = await Theatre.findOne({
+        _id: id,
+        theatreStatus: querry
+    })
+        .select("-ownerPassword -ownerRefreshToken")
+    if (!findTheatre) {
+        throw new ApiError(404, "No Theatre Found")
+    }
+
+    console.log("Theatre details is: ", findTheatre)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Theatre details fetched", { theatreDetails: findTheatre }))
+
+})
+
+const adminTheatreAction = asyncHandler(async (req, res, next) => {
+
+    const adminData = req.admin;
+
+    if (!adminData || adminData.role !== "admin") {
+        throw new ApiError(403, "Forbidden Error");
+    }
+
+    console.log("Admin id is:", adminData._id);
+
+    const { id } = req.params;
+    const { status, reason } = req.body;
+
+    if (!status) {
+        throw new ApiError(400, "Status is required");
+    }
+
+    if ((!reason || reason.trim() === "") && status !== "Approved") {
+        throw new ApiError(400, "Reason is required");
+    }
+
+    console.log("Status is:", status);
+    console.log("Reason is:", reason);
+
+    const allowedStatus = [
+        "Approved",
+        "Rejected",
+        "NeedMoreDocuments"
+    ];
+
+    if (!allowedStatus.includes(status)) {
+        throw new ApiError(400, "Invalid theatre status");
+    }
+
+    const getTheatreDetails = await Theatre.findById(id)
+        .select("-ownerRefreshToken -ownerPassword");
+
+    if (!getTheatreDetails) {
+        throw new ApiError(404, "Theatre not found");
+    }
+
+    console.log("Theatre Details is:", getTheatreDetails);
+
+    if (getTheatreDetails.theatreStatus === "Approved") {
+        throw new ApiError(400, "Theatre has already been approved.");
+    }
+
+    getTheatreDetails.theatreStatus = status;
+    getTheatreDetails.adminRemark = reason?.trim() || "";
+
+    let emailSubject = "";
+    let emailMessage = "";
+
+    if (status === "Approved") {
+
+        getTheatreDetails.ownerPassword = "aAbBcC123";
+
+        emailSubject = "CineVerse Theatre Registration Approved";
+
+        emailMessage = `<h2 style="color: #16a34a; margin-bottom: 20px;">
+        Theatre Registration Approved
+</h2>
+
+<p>Dear Theatre Owner,</p>
+
+<p>
+    We are pleased to inform you that your theatre registration request
+    has been <strong style="color: #16a34a;">approved</strong> by the
+    CineVerse administration team.
+</p>
+
+<p>
+    Your theatre registration has successfully completed the verification
+    and approval process.
+</p>
+
+<div style="background-color: #f0fdf4; padding: 15px; margin: 20px 0; border-left: 4px solid #16a34a;">
+    <p style="margin: 0 0 8px 0;">
+        <strong>Registration Status:</strong> Approved
+    </p>
+
+    <p style="margin: 0;">
+        Your theatre account is now ready to access.
+    </p>
+</div>
+
+<h3 style="color: #333;">
+    Temporary Password
+</h3>
+
+<div style="background-color: #f8fafc; padding: 15px; margin: 15px 0; border: 1px solid #e5e7eb; border-radius: 6px;">
+
+    <p style="margin: 5px 0;">
+        <strong>Temporary Password:</strong> aAbBcC123
+    </p>
+
+</div>
+
+<h3 style="color: #333;">
+    How to Access Your Theatre Dashboard
+</h3>
+
+<ol style="padding-left: 20px; line-height: 1.8;">
+
+    <li>
+        Visit the official <strong>CineVerse</strong> website.
+    </li>
+
+    <li>
+        Click on the <strong>Login</strong> button.
+    </li>
+
+    <li>
+        On the Login page, click on the
+        <strong>Forgot Password</strong> option.
+    </li>
+
+    <li>
+        Follow the instructions provided on the Forgot Password page
+        to create a <strong>new password</strong> for your account.
+    </li>
+
+    <li>
+        After successfully updating your password,
+        return to the <strong>Login</strong> page.
+    </li>
+
+    <li>
+        Log in again using your registered email address and
+        <strong>new password</strong>.
+    </li>
+
+    <li>
+        After successful login, you can access your
+        <strong>Theatre Dashboard</strong>.
+    </li>
+
+</ol>
+
+<div style="background-color: #fffbeb; padding: 15px; margin: 20px 0; border-left: 4px solid #d97706;">
+
+    <p style="margin: 0;">
+        <strong>Security Notice:</strong>
+        The password provided above is a temporary password.
+        Please update your password through the
+        <strong>Forgot Password</strong> option before accessing
+        your Theatre Dashboard.
+    </p>
+
+</div>
+
+<p>
+    Thank you for choosing <strong>CineVerse</strong>.
+    We are excited to have your theatre join our platform.
+</p>
+
+<p>
+    Regards,<br>
+    <strong>CineVerse Administration Team</strong>
+</p>
+`;
+    }
+
+    else if (status === "Rejected") {
+
+        emailSubject = "CineVerse Theatre Registration Rejected";
+
+        emailMessage = `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; color: #333; background-color: #ffffff;">
+
+                <h2 style="color: #dc2626; margin-bottom: 20px;">
+                    Theatre Registration Rejected
+                </h2>
+
+                <p>Dear Theatre Owner,</p>
+
+                <p>
+                    We regret to inform you that your CineVerse theatre registration
+                    request has been <strong style="color: #dc2626;">rejected</strong>
+                    by the CineVerse administration team.
+                </p>
+
+                <div style="background-color: #fef2f2; padding: 15px; margin: 20px 0; border-left: 4px solid #dc2626;">
+
+                    <p style="margin: 0 0 8px 0;">
+                        <strong>Reason for Rejection:</strong>
+                    </p>
+
+                    <p style="margin: 0;">
+                        ${reason}
+                    </p>
+
+                </div>
+
+                <p>
+                    Please review the reason provided above and take the necessary
+                    action if applicable.
+                </p>
+
+                <h3 style="color: #333;">
+                    How to Access Your Account
+                </h3>
+
+                <ol style="padding-left: 20px; line-height: 1.8;">
+                    <li>Go to the official CineVerse website.</li>
+                    <li>Click on the <strong>Login</strong> option.</li>
+                    <li>Enter the email address used during theatre registration.</li>
+                    <li>Enter the password aAbBcC123.</li>
+                    <li>Click on the <strong>Login</strong> button.</li>
+                </ol>
+
+                <p>
+                    If you believe the rejection was made in error or require further
+                    clarification, please contact the CineVerse administration team.
+                </p>
+
+                <p>
+                    Regards,<br>
+                    <strong>CineVerse Administration Team</strong>
+                </p>
+
+            </div>
+        `;
+    }
+
+    else if (status === "NeedMoreDocuments") {
+
+        emailSubject = "Action Required: Additional Documents Needed for Your CineVerse Theatre Registration";
+
+        emailMessage = `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; color: #333; background-color: #ffffff;">
+
+                <h2 style="color: #d97706; margin-bottom: 20px;">
+                    Additional Documents Required
+                </h2>
+
+                <p>Dear Theatre Owner,</p>
+
+                <p>
+                    Your CineVerse theatre registration request has been reviewed
+                    by our administration team.
+                </p>
+
+                <p>
+                    We require some additional information or documents before we can
+                    proceed with the verification of your theatre registration.
+                </p>
+
+                <div style="background-color: #fffbeb; padding: 15px; margin: 20px 0; border-left: 4px solid #d97706;">
+
+                    <p style="margin: 0 0 8px 0;">
+                        <strong>Admin Remark:</strong>
+                    </p>
+
+                    <p style="margin: 0;">
+                        ${reason}
+                    </p>
+
+                </div>
+
+                <p>
+                    Please review the above remark and provide the requested
+                    information or documents through your CineVerse account.
+                </p>
+
+                <h3 style="color: #333;">
+                    How to Continue
+                </h3>
+
+                <ol style="padding-left: 20px; line-height: 1.8;">
+                    <li>Go to the official CineVerse website.</li>
+                    <li>Click on the <strong>Login</strong> option.</li>
+                    <li>Enter the email address used during theatre registration.</li>
+                    <li>Enter the password aAbBcC123.</li>
+                    <li>Click on the <strong>Login</strong> button.</li>
+                    <li>Review the required changes or documents mentioned by the administration team.</li>
+                    <li>Update the required information and resubmit your theatre application.</li>
+                </ol>
+
+                <p>
+                    After resubmission, your application will be reviewed again by the
+                    CineVerse administration team.
+                </p>
+
+                <p>
+                    Regards,<br>
+                    <strong>CineVerse Administration Team</strong>
+                </p>
+
+            </div>
+        `;
+    }
+    await getTheatreDetails.save();
+
+    await sendEmail({
+        to: getTheatreDetails.ownerEmail,
+        subject: emailSubject,
+        html: emailMessage
+    });
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Theatre Status Updated", {
+            theatreStatus: getTheatreDetails.theatreStatus,
+            reason: getTheatreDetails.adminRemark
+        }));
+});
 
 
-
-export { createAdmin, loginAdmin, refreshAccessToken, verifyAdmin, logOutAdmin, getAllAdmin, fetchAdminDetails, updateAdmin, activateAdmin, deactivateAdmin }
+export { createAdmin, loginAdmin, refreshAccessToken, verifyAdmin, logOutAdmin, getAllAdmin, fetchAdminDetails, updateAdmin, activateAdmin, deactivateAdmin, adminDashBoard, theatrePendingRequest, completeTheatreRequestDetails, adminTheatreAction }

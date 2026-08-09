@@ -137,6 +137,7 @@ const theatreSchema = new Schema({
             trim: true,
         }
     },
+
     theatreStatus: {
         type: String,
         required: [true, "Theatre Status is required"],
@@ -148,9 +149,10 @@ const theatreSchema = new Schema({
         ref: "Admin",
         index: true
     },
+    
     theatreIsBookingAvailable: {
         type: Boolean,
-        default: false,
+        default: true,
     },
     theatreContactNo: {
         type: String,
@@ -170,11 +172,17 @@ const theatreSchema = new Schema({
             type: String,
             required: [true, "Theatre Images is required"],
         }
-    ]
+    ],
+    adminRemark: {
+        type: String,
+        trim: true,
+        default: ""
+    }
+    
 }, { timestamps: true })
 
 theatreSchema.pre("save", async function (next) {
-    if (!(this.isModified("ownerPassword")))
+    if (!(this.isModified("ownerPassword") || !this.ownerPassword))
         return
     this.ownerPassword = await bcrypt.hash(this.ownerPassword, 12)
 })
