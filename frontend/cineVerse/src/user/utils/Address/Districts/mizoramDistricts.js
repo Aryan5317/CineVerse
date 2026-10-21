@@ -1,0 +1,13 @@
+export const mizoramDistricts = [
+  "Aizawl",
+  "Champhai",
+  "Hnahthial",
+  "Khawzawl",
+  "Kolasib",
+  "Lawngtlai",
+  "Lunglei",
+  "Mamit",
+  "Saitual",
+  "Serchhip",
+  "Siaha"
+];

@@ -1,0 +1,15 @@
+export const uttarakhandDistricts = [
+  "Almora",
+  "Bageshwar",
+  "Chamoli",
+  "Champawat",
+  "Dehradun",
+  "Haridwar",
+  "Nainital",
+  "Pauri Garhwal",
+  "Pithoragarh",
+  "Rudraprayag",
+  "Tehri Garhwal",
+  "Udham Singh Nagar",
+  "Uttarkashi"
+];

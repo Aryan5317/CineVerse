@@ -207,7 +207,7 @@ function HomePage() {
                             {theatreMovieData.map((movie, index) => (
 
                                 <button
-                                onClick={() => MovieCompleteDetailsPage(movie._id)}
+                                onClick={() => MovieCompleteDetailsPage(movie.movieId)}
                                     key={index}
                                     className="w-44 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg snap-start"
                                 >
@@ -215,8 +215,8 @@ function HomePage() {
                                     <div className="h-64 overflow-hidden bg-slate-200">
 
                                         <img
-                                            src={movie?.moviePosterUrl}
-                                            alt={movie.title}
+                                            src={movie?.movieImage}
+                                            alt={movie.movieName}
                                             className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                                         />
 
@@ -225,7 +225,7 @@ function HomePage() {
                                     <div className="border-t border-slate-200 p-3">
 
                                         <h2 className="line-clamp-1 text-base font-bold text-slate-900">
-                                            {movie.title}
+                                            {movie.movieName}
                                         </h2>
 
                                         <p className="mt-1 text-sm font-medium text-slate-500">

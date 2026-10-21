@@ -1,0 +1,22 @@
+export const jammuAndKashmirDistricts = [
+  "Anantnag",
+  "Bandipora",
+  "Baramulla",
+  "Budgam",
+  "Doda",
+  "Ganderbal",
+  "Jammu",
+  "Kathua",
+  "Kishtwar",
+  "Kulgam",
+  "Kupwara",
+  "Poonch",
+  "Pulwama",
+  "Rajouri",
+  "Ramban",
+  "Reasi",
+  "Samba",
+  "Shopian",
+  "Srinagar",
+  "Udhampur"
+];

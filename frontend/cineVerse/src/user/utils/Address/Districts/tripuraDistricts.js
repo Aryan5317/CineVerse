@@ -1,0 +1,10 @@
+export const tripuraDistricts = [
+  "Dhalai",
+  "Gomati",
+  "Khowai",
+  "North Tripura",
+  "Sepahijala",
+  "South Tripura",
+  "Unakoti",
+  "West Tripura"
+];

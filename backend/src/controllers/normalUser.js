@@ -5,6 +5,12 @@ import ApiResponse from "../utils/apiResponse.js"
 import validator from "validator"
 import jwt from "jsonwebtoken"
 import sendEmail from "../utils/sendEmail.js";
+import { Shows } from "../models/showsModal.js";
+import { Theatre } from "../models/theatreModal.js";
+import { Screen } from "../models/screenModal.js";
+import { Movie } from "../models/movieModal.js";
+import { Booking } from "../models/bookingModel.js";
+
 
 const registerUser = asyncHandler(async (req, res, next) => {
     const { name, email, password, phoneNumber } = req.body
@@ -366,9 +372,310 @@ const resetPassword = asyncHandler(async (req, res, next) => {
 
 })
 
+const movieDetailsBooking = asyncHandler(async (req, res, next) => {
+    const userData = req.user;
+
+    if (!userData) {
+        throw new ApiError(401, "UnAuthorized User");
+    }
+
+    console.log("User data from req.user is: ", userData);
+
+    const { movieId } = req.params;
+
+    if (!movieId) {
+        throw new ApiError(400, "Movie Id is required");
+    }
+
+    console.log("Movie id is: ", movieId);
+
+    const { state, district } = req.query;
+
+    if (!state?.trim()) {
+        throw new ApiError(400, "State is required");
+    }
+
+    if (!district?.trim()) {
+        throw new ApiError(400, "District is required");
+    }
+
+    const getMovieDetails = await Shows.findOne({
+        movieId: movieId
+    });
+
+    if (!getMovieDetails) {
+        throw new ApiError(404, "No Movie found");
+    }
+
+    console.log("Movie details is: ", getMovieDetails);
+
+    const theatreId = getMovieDetails.theatreId;
+    console.log("Theatre Id is: ", theatreId)
+
+    const getTheatreData = await Theatre.findOne({
+        _id: theatreId,
+        "theatreAddress.theatreState": state.trim(),
+        "theatreAddress.theatreDistrict": district.trim()
+    });
+
+    if (!getTheatreData) {
+        throw new ApiError(404, "No theatre Found");
+    }
+
+    console.log("Theatre Data is: ", getTheatreData);
+
+    const movieData = {
+        _id: theatreId,
+        MovieName: getMovieDetails.movieName,
+        TheatreName: [getTheatreData.theatreName],
+        TheatreAddress: getTheatreData.theatreAddress,
+        ShowDate: [getMovieDetails.showsDate],
+        ShowTimings: [getMovieDetails.showsStartTime]
+    };
+
+    console.log("Movie Data is: ", movieData);
+
+    return res.status(200).json(
+        new ApiResponse(200, "Movie Data fetched", { data: movieData })
+    );
+});
+
+const getSeatsLayout = asyncHandler(async (req, res, next) => {
+    const userData = req.user;
+    if (!userData) {
+        throw new ApiError(401, "UnAuthorized User");
+    }
+    console.log("User data from req.user is: ", userData);
+    const { movieId, theatreId } = req.params;
+    if (!movieId) {
+        throw new ApiError(400, "Movie Id is required");
+    }
+    console.log("Movie id is: ", movieId);
+    if (!theatreId) {
+        throw new ApiError(400, "Theatre Id is required");
+    }
+    console.log("Movie id is: ", theatreId);
+    const getMovieDetails = await Shows.findOne({
+        movieId: movieId,
+        theatreId: theatreId,
+    });
+    if (!getMovieDetails) {
+        throw new ApiError(404, "No Movie found");
+    }
+    console.log("Movie details is: ", getMovieDetails);
+    const screenId = getMovieDetails.screenId
+    const getScreenDetails = await Screen.findOne({
+        _id: screenId,
+        theatreId: theatreId
+    })
+    if (!getScreenDetails) {
+        throw new ApiError(404, "No scrren found");
+    }
+    console.log("Screen Details is: ", getScreenDetails);
+    const seatData = {
+        seats: getScreenDetails.seatCategories,
+        screenFormat: getScreenDetails.screenFormat,
+        seatPrice: getMovieDetails.seatPrices,
+    }
+    console.log("Seat Data are: ", seatData)
+    return res.status(200)
+        .json(new ApiResponse(200, "Seat Data fetched", { seatData: seatData }))
+})
+
+const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
+    const userData = req.user;
+
+    if (!userData?._id) {
+        throw new ApiError(401, "Unauthorized User");
+    }
+
+    const { movieId, theatreId, screenId, showId, selectedSeats } = req.body;
+
+    const ids = [movieId, theatreId, screenId, showId];
+
+    if (
+        ids.some(id => !id || !mongoose.Types.ObjectId.isValid(id)) ||
+        !Array.isArray(selectedSeats) ||
+        selectedSeats.length === 0
+    ) {
+        throw new ApiError(400, "Invalid booking details");
+    }
+
+    const seatIds = selectedSeats.map(seat => seat?.seatId);
+
+    if (
+        seatIds.some(id => typeof id !== "string" || !id.trim()) ||
+        new Set(seatIds).size !== seatIds.length ||
+        selectedSeats.some(seat =>
+            !seat?.seatLabel ||
+            !["Normal", "Premium", "Recliner"].includes(seat?.seatType)
+        )
+    ) {
+        throw new ApiError(400, "Invalid or duplicate selected seats");
+    }
+
+    const user = await User.findById(userData._id).select("_id");
+
+    if (!user) {
+        throw new ApiError(401, "User account not found");
+    }
+
+    const [movie, theatre, screen, show] = await Promise.all([
+        Movie.findOne({
+            _id: movieId,
+            isDeleted: false,
+            availabilityType: { $in: ["Theatre", "Both"] }
+        }),
+        Theatre.findOne({
+            _id: theatreId,
+            theatreStatus: "Approved",
+            theatreIsBookingAvailable: true
+        }),
+        Screen.findOne({
+            _id: screenId,
+            theatreId,
+            screenStatus: "Available"
+        }),
+        Shows.findOne({
+            _id: showId,
+            movieId,
+            theatreId,
+            screenId,
+            showStatus: "Scheduled"
+        })
+    ]);
+
+    if (!movie) {
+        throw new ApiError(404, "Movie not found or unavailable for theatre booking");
+    }
+
+    if (!theatre) {
+        throw new ApiError(400, "Theatre is unavailable for booking");
+    }
+
+    if (!screen) {
+        throw new ApiError(400, "Screen is unavailable");
+    }
+
+    if (!show) {
+        throw new ApiError(404, "Scheduled show not found");
+    }
+
+    const now = new Date();
+    const showDate = new Date(show.showsDate);
+    const [hours, minutes] = show.showsStartTime.split(":").map(Number);
+
+    if (
+        Number.isNaN(showDate.getTime()) ||
+        !Number.isInteger(hours) ||
+        !Number.isInteger(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+    ) {
+        throw new ApiError(400, "Invalid show date or time");
+    }
+
+    showDate.setHours(hours, minutes, 0, 0);
+
+    if (showDate <= now) {
+        throw new ApiError(400, "This show is no longer available for booking");
+    }
+
+    const screenCategories = new Set(
+        screen.seatCategories.map(category => category.seatType)
+    );
+
+    const showPrices = new Map(
+        show.seatPrices.map(item => [item.seatType, item.price])
+    );
+
+    const verifiedSeats = selectedSeats.map(seat => {
+        if (!screenCategories.has(seat.seatType)) {
+            throw new ApiError(400, `Invalid seat category: ${seat.seatType}`);
+        }
+
+        const price = showPrices.get(seat.seatType);
+
+        if (!Number.isFinite(price) || price < 0) {
+            throw new ApiError(400, `Price unavailable for ${seat.seatType} seats`);
+        }
+
+        return {
+            seatId: seat.seatId.trim(),
+            seatLabel: seat.seatLabel.trim(),
+            seatType: seat.seatType,
+            price
+        };
+    });
+
+    const ticketSubtotal = verifiedSeats.reduce(
+        (total, seat) => total + seat.price,
+        0
+    );
+
+    const convenienceFee = 0;
+    const totalAmount = ticketSubtotal + convenienceFee;
+
+    const activeBookings = await Booking.find({
+        showId: show._id,
+        "selectedSeats.seatId": { $in: seatIds },
+        $or: [
+            {
+                bookingStatus: "Confirmed",
+                paymentStatus: "Paid"
+            },
+            {
+                bookingStatus: "Pending",
+                paymentStatus: "Pending",
+                seatHoldExpiresAt: { $gt: now }
+            }
+        ]
+    }).select("selectedSeats.seatId");
+
+    const unavailableSeats = new Set(
+        activeBookings.flatMap(booking =>
+            booking.selectedSeats.map(seat => seat.seatId)
+        )
+    );
+
+    const conflictingSeats = seatIds.filter(
+        seatId => unavailableSeats.has(seatId)
+    );
+
+    if (conflictingSeats.length > 0) {
+        throw new ApiError(
+            409,
+            `These seats are no longer available: ${conflictingSeats.join(", ")}`
+        );
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Booking details verified successfully",
+        data: {
+            movieId: movie._id,
+            movieName: movie.title,
+            theatreId: theatre._id,
+            theatreName: theatre.theatreName,
+            screenId: screen._id,
+            screenNumber: screen.screenNumber,
+            showId: show._id,
+            showDate: show.showsDate,
+            showTime: show.showsStartTime,
+            selectedSeats: verifiedSeats,
+            ticketSubtotal,
+            convenienceFee,
+            totalAmount
+        }
+    });
+});
 
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken, verifyUser, forgetPassword, verifyOTP, resetPassword }
+export { registerUser, loginUser, logoutUser, refreshAccessToken, verifyUser, forgetPassword, verifyOTP, resetPassword, movieDetailsBooking, getSeatsLayout, verfiyTicketBookingDetails }
+
+
 // const testController = asyncHandler(async (req, res, next) => {
 //     await sendEmail({
 //         to: "aryanraj5317@gmail.com",

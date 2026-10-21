@@ -6,6 +6,7 @@ import validator from "validator"
 import uploadOnCloudinary from "../utils/cloudinary.js";
 import sendEmail from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken"
+import { Screen } from "../models/screenModal.js";
 
 const genrateAccessRefreshToken = async (user) => {
     try {
@@ -407,12 +408,13 @@ const updateIncomingToken = asyncHandler(async (req, res, next) => {
 })
 
 const getUserTheatres = asyncHandler(async (req, res, next) => {
+
     const theatreData = req.theatre
     if (!theatreData) {
         throw new ApiError(403, "Forbidden User")
     }
 
-    console.log("Theatre user id: ", theatreData._id);
+    console.log("Theatre user id: ", theatreData._id.toString());
 
     const { theatreName, theatreIsBookingAvailable, theatreAddress } = theatreData
 
@@ -423,12 +425,358 @@ const getUserTheatres = asyncHandler(async (req, res, next) => {
     let theatreValue = {
         theatreName: theatreName,
         theatreAddress: theatreAddress,
-        theatreAvailability: theatreIsBookingAvailable
+        theatreAvailability: theatreIsBookingAvailable,
+        theatreId: theatreData._id.toString()
     }
 
     return res.status(200)
-        .json(new ApiResponse(200, "Theatre data fetched",  [theatreValue]))
+        .json(new ApiResponse(200, "Theatre data fetched", [theatreValue]))
 
 })
 
-export { registerTheatreOwner, loginTheatreOwner, verifytheatreOwner, updateIncomingToken, getUserTheatres }
+const addNewScreen = asyncHandler(async (req, res, next) => {
+
+    const theatreData = req.theatre
+
+    if (!theatreData) {
+        throw new ApiError(401, "Unauthorized User")
+    }
+
+    const { theatreId } = req.params
+
+    if (!theatreId) {
+        throw new ApiError(400, "Theatre ID is required")
+    }
+
+    console.log("Theatre Id is: ", theatreId)
+    console.log("Theatre user id is: ", theatreData._id)
+
+    const { screenNumber, screenName, screenStatus, screenFormat, seatCategories } = req.body
+
+    if (screenNumber === undefined || screenNumber === null || screenNumber === "") {
+        throw new ApiError(400, "Screen Number is required")
+    }
+    if (!Number.isInteger(Number(screenNumber))) {
+        throw new ApiError(400, "Screen number must be a whole number")
+    }
+    if (Number(screenNumber) < 1 || Number(screenNumber) > 30) {
+        throw new ApiError(400, "Enter valid screen number")
+    }
+    if (!screenName || screenName.trim() === "") {
+        throw new ApiError(400, "Screen Name is required")
+    }
+    if (!screenStatus || screenStatus.trim() === "") {
+        throw new ApiError(400, "Screen Status is required")
+    }
+    if (!screenFormat || screenFormat.trim() === "") {
+        throw new ApiError(400, "Screen Format is required")
+    }
+    if (!Array.isArray(seatCategories) || seatCategories.length === 0) {
+        throw new ApiError(400, "Seat Category is required")
+    }
+
+    const allowedSeatTypes = ["Normal", "Premium", "Recliner"]
+
+    const seatTypes = []
+
+
+    for (let i = 0; i < seatCategories.length; i++) {
+
+        const category = seatCategories[i]
+
+        if (!category) {
+            throw new ApiError(400, `Seat Category ${i + 1} is invalid`)
+        }
+        if (!category.seatType || category.seatType.trim() === "") {
+            throw new ApiError(400, `Seat Type is required for Seat Category ${i + 1}`)
+        }
+        if (!allowedSeatTypes.includes(category.seatType)) {
+            throw new ApiError(400, `Invalid seat type for Seat Category ${i + 1}`)
+        }
+        if (category.rows === undefined || category.rows === null || category.rows === "") {
+            throw new ApiError(400, `Rows are required for ${category.seatType} seat`)
+        }
+        if (!Number.isInteger(Number(category.rows))) {
+            throw new ApiError(400, `Rows must be a whole number for ${category.seatType} seat`)
+        }
+        if (Number(category.rows) < 1) {
+            throw new ApiError(400, `Rows must be at least 1 for ${category.seatType} seat`)
+        }
+        if (category.columns === undefined || category.columns === null || category.columns === "") {
+            throw new ApiError(400, `Columns are required for ${category.seatType} seat`)
+        }
+        if (!Number.isInteger(Number(category.columns))) {
+            throw new ApiError(400, `Columns must be a whole number for ${category.seatType} seat`)
+        }
+        if (Number(category.columns) < 1) {
+            throw new ApiError(400, `Columns must be at least 1 for ${category.seatType} seat`)
+        }
+        seatTypes.push(category.seatType)
+    }
+
+    const uniqueSeatTypes = new Set(seatTypes)
+
+    if (uniqueSeatTypes.size !== seatTypes.length) {
+        throw new ApiError(400, "Duplicate seat categories are not allowed")
+    }
+
+    console.log("Screen number is: ", screenNumber)
+    console.log("Screen Name is: ", screenName)
+    console.log("Screen status is: ", screenStatus)
+    console.log("Screen Format is: ", screenFormat)
+    console.log("Seat Category is: ", seatCategories)
+
+    const getTheatre = await Theatre.findById(theatreId)
+
+    if (!getTheatre) {
+        throw new ApiError(404, "No Theatre found.")
+    }
+
+    if (getTheatre._id.toString() !== theatreData._id.toString()) {
+        throw new ApiError(403, "You are not authorized to add a screen to this theatre")
+    }
+
+    console.log("Theatre Details is: ", getTheatre)
+
+    const existingScreen = await Screen.findOne({
+        theatreId: theatreId,
+        screenNumber: Number(screenNumber)
+    })
+
+    if (existingScreen) {
+        throw new ApiError(409, "This screen number already exists for this theatre")
+    }
+
+    let totalSeats = 0
+
+    for (let i = 0; i < seatCategories.length; i++) {
+
+        const category = seatCategories[i]
+
+        totalSeats += Number(category.rows) * Number(category.columns)
+    }
+
+    const addScreen = await Screen.create({
+        theatreId: theatreId,
+        screenNumber: Number(screenNumber),
+        screenName: screenName,
+        screenStatus: screenStatus,
+        screenFormat: screenFormat,
+        totalSeats: totalSeats,
+        seatCategories: seatCategories
+    })
+
+
+    if (!addScreen) {
+        throw new ApiError(500, "Error while adding the screen")
+    }
+
+    console.log("Screen Details is: ", addScreen)
+
+    return res.status(201)
+        .json(new ApiResponse(201, "Screen is added", { screenDetails: addScreen }))
+})
+
+const getAllTheatreScreen = asyncHandler(async (req, res, next) => {
+
+    const theatreData = req.theatre
+    if (!theatreData) {
+        throw new ApiError(401, "UnAuthorized User")
+    }
+
+    console.log("Theatre id is: ", theatreData._id)
+
+    const { theatreId } = req.params
+
+    if (!theatreId) {
+        throw new ApiError(400, "Theatre Id is required")
+    }
+
+    console.log("Theatre ID is: ", theatreId)
+
+    if (theatreData._id.toString() !== theatreId.toString()) {
+        throw new ApiError(403, "You are not authorized to access this theatre")
+    }
+
+    const theatreScreen = await Screen.find({
+        theatreId: theatreId
+    })
+
+    console.log("Theatre Screen are: ", theatreScreen)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Theatre Screen Fetched", { theatreScreen: theatreScreen }))
+
+})
+
+const theatreScreenDashboardApi = asyncHandler(async (req, res, next) => {
+    const theatreData = req.theatre
+    if (!theatreData) {
+        throw new ApiError(401, "UnAuthorized User")
+    }
+
+    console.log("User Theatre ID is: ", theatreData._id)
+
+    const { theatreId } = req.params
+
+    if (!theatreId) {
+        throw new ApiError(400, "Theatre Id is required")
+    }
+
+    console.log("Theatre id recived from params is: ", theatreId)
+
+    if (theatreData._id.toString() !== theatreId.toString()) {
+        throw new ApiError(403, "You are not authorized to access this theatre")
+    }
+
+    const getTheatreCompleteScreen = await Screen.find({
+        theatreId: theatreId
+    })
+
+    console.log("Theatre All Screen are: ", getTheatreCompleteScreen)
+
+    const totalScreen = getTheatreCompleteScreen.length
+
+    let availableScreen = 0;
+    let maintenanceScreen = 0;
+    let closedScreen = 0;
+
+    for (let i = 0; i < totalScreen; i++) {
+        console.log("Screen is: ", getTheatreCompleteScreen[i])
+        if (getTheatreCompleteScreen[i].screenStatus === "Available") {
+            availableScreen++;
+        }
+        if (getTheatreCompleteScreen[i].screenStatus === "Maintenance") {
+            maintenanceScreen++;
+        }
+        if (getTheatreCompleteScreen[i].screenStatus === "Closed") {
+            closedScreen++;
+        }
+    }
+
+    console.log("Total Screen is: ", totalScreen)
+    console.log("Available Screen is: ", availableScreen)
+    console.log("Maintainance Screen is: ", maintenanceScreen)
+    console.log("Closed Screen is: ", closedScreen)
+
+    const dashboardData = {
+        totalScreen: totalScreen,
+        availableScreen: availableScreen,
+        maintenanceScreen: maintenanceScreen,
+        closedScreen: closedScreen,
+    }
+
+    console.log("Dashboard Data to return is: ", dashboardData)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Dashboard Data fetched", { data: dashboardData }))
+})
+
+const completeTheatreScreenDetails = asyncHandler(async (req, res, next) => {
+
+    const theatreData = req.theatre
+    if (!theatreData) {
+        throw new ApiError(400, "UnAuthorized User")
+    }
+
+    console.log("Theatre Id is: ", theatreData._id)
+
+    const { screenId, theatreId } = req.params
+    if (!screenId) {
+        throw new ApiError(404, "Screen Id is required")
+    }
+
+    console.log("Screen id for complete screen details: ", screenId)
+
+    if (!theatreId) {
+        throw new ApiError(404, "Theatre Id is requird")
+    }
+    if (theatreId !== theatreData._id.toString()) {
+        throw new ApiError(404, "Incorrect Theatre Id")
+    }
+
+    console.log("Theatre ID is: ", theatreId)
+
+    const getScreenData = await Screen.findOne({
+        theatreId: theatreId,
+        _id: screenId
+    });
+
+    if (!getScreenData) {
+        throw new ApiError(400, "No any Screen find")
+    }
+
+    console.log("Screen Details is: ", getScreenData)
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Screen Details fetched", { screenData: getScreenData }))
+
+})
+
+const updateScreenStatus = asyncHandler(async (req, res, next) => {
+
+    const theatreData = req.theatre
+
+    if (!theatreData) {
+        throw new ApiError(401, "Unauthorized User")
+    }
+
+    console.log("Theatre Id is: ", theatreData._id)
+
+    const { screenId, theatreId } = req.params
+
+    if (!screenId) {
+        throw new ApiError(400, "Screen Id is required")
+    }
+
+    if (!theatreId) {
+        throw new ApiError(400, "Theatre Id is required")
+    }
+
+    if (theatreData._id.toString() !== theatreId.toString()) {
+        throw new ApiError(403, "Incorrect Theatre Id")
+    }
+
+    console.log("Theatre Id is: ", theatreId)
+    console.log("Screen Id is: ", screenId)
+
+    const { screenStatus } = req.body
+
+    if (!screenStatus || screenStatus.trim() === "") {
+        throw new ApiError(400, "Screen Status is required")
+    }
+
+    const allowedStatuses = [
+        "Available",
+        "Maintenance",
+        "Closed"
+    ]
+
+    if (!allowedStatuses.includes(screenStatus)) {
+        throw new ApiError(400, "Invalid Screen Status")
+    }
+
+    console.log("Updated Screen Status is: ", screenStatus)
+
+    const screenDetails = await Screen.findOne({
+        _id: screenId,
+        theatreId: theatreId
+    })
+
+    if (!screenDetails) {
+        throw new ApiError(404, "No Screen Found for this theatre")
+    }
+
+    console.log("Screen Details is: ", screenDetails)
+
+    screenDetails.screenStatus = screenStatus
+
+    await screenDetails.save()
+
+    console.log("Screen Status is updated")
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Screen Status is updated", { screenData: screenDetails.screenStatus }))
+})
+
+export { registerTheatreOwner, loginTheatreOwner, verifytheatreOwner, updateIncomingToken, getUserTheatres, addNewScreen, getAllTheatreScreen, theatreScreenDashboardApi, completeTheatreScreenDetails, updateScreenStatus }

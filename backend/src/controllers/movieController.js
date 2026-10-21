@@ -1,9 +1,9 @@
 import ApiResponse from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { Movie } from "../models/movieModal.js";
+import { Shows } from "../models/showsModal.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 import ApiError from "../utils/errorHandling.js";
-import { json } from "stream/consumers";
 import mongoose from "mongoose";
 
 const createMovie = asyncHandler(async (req, res, next) => {
@@ -265,13 +265,22 @@ const getStreamingMovie = asyncHandler(async (req, res, next) => {
 
 const getTheatreMovies = asyncHandler(async (req, res, next) => {
 
-    const allmovie = await Movie.find({
-        $or: [
-            { availabilityType: "Theatre" },
-            { availabilityType: "Both" }
-        ]
+    const todayDate = new Date()
+    todayDate.setHours(0, 0, 0, 0)
+    console.log("Todays Date is: ", todayDate)
+    // const allmovie = await Movie.find({
+    //     $or: [
+    //         { availabilityType: "Theatre" },
+    //         { availabilityType: "Both" }
+    //     ]
+    // })
+    //     .select("-createdBy -description -director -genre -cast -language")
+    const allmovie = await Shows.find({
+        showStatus: "Scheduled",
+        showsDate: {$gte: todayDate},
+        movieId: { $ne: null },
     })
-        .select("-createdBy -description -director -genre -cast -language")
+
 
     console.log("All movies are: ", allmovie)
 

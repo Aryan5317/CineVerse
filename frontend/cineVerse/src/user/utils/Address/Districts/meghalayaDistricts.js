@@ -1,0 +1,14 @@
+export const meghalayaDistricts = [
+  "East Garo Hills",
+  "East Jaintia Hills",
+  "East Khasi Hills",
+  "Eastern West Khasi Hills",
+  "North Garo Hills",
+  "Ri Bhoi",
+  "South Garo Hills",
+  "South West Garo Hills",
+  "South West Khasi Hills",
+  "West Garo Hills",
+  "West Jaintia Hills",
+  "West Khasi Hills"
+];

@@ -59,6 +59,11 @@ function MovieCompleteDetailsPage() {
         navigate("/")
     }
 
+    const BookTickets = () => {
+        console.log("Book tickets button is clicked")
+        navigate(`/movie/${movieId}/book-ticket`);
+    }
+
     return (
         <>
             {isLoggedIn && <div className="min-h-screen bg-slate-50 pb-24">
@@ -186,6 +191,7 @@ function MovieCompleteDetailsPage() {
                             <div className="space-y-4">
 
                                 <button
+                                onClick={() => BookTickets()}
                                     className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-base font-bold text-white shadow-lg transition-all duration-200 active:scale-95"
                                 >
                                     <span className="text-xl">🎟️</span>

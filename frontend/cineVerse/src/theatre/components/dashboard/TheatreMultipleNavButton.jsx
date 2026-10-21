@@ -1,6 +1,6 @@
 import React from "react"
 import { MdMovie, MdDesktopWindows, MdConfirmationNumber } from "react-icons/md";
-import { IoPersonOutline, IoHomeOutline } from "react-icons/io5";
+import {  IoHomeOutline } from "react-icons/io5";
 import { NavLink } from "react-router-dom";
 
 function TheatreMultipleNavButton() {

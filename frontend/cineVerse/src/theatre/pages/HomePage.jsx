@@ -4,16 +4,18 @@ import MultipleTheatreOptions from "../components/dashboard/MultipleTheatreOptio
 import TheatreMultipleNavButton from "../components/dashboard/TheatreMultipleNavButton";
 import DailyShows from "../components/dashboard/DailyShows";
 import { MdSupportAgent } from "react-icons/md";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { theatrePropContext } from "../context/TheatreContextProvider/theatreContextApi.js";
 
 function HomePage() {
 
-    const [currentTheatreData, setCurrentTheatreData] = useState([])
+    const { theatreIsLoggedIn, selectedTheatre } = useContext(theatrePropContext)
+    // const [currentTheatreData, setCurrentTheatreData] = useState([])
+
 
     useEffect(() => {
-        console.log("Current theatre data is: ", currentTheatreData)
-    }, [currentTheatreData])
+        console.log("Current theatre data in home page: ", selectedTheatre)
+    }, [selectedTheatre])
 
     return (
         <>
@@ -150,7 +152,7 @@ function HomePage() {
                             </div>
 
                             <DailyShows
-                                currentTheatreData={currentTheatreData}
+                                // currentTheatreData={currentTheatreData}
                             />
 
                         </div>
