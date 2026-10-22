@@ -10,6 +10,7 @@ import { Theatre } from "../models/theatreModal.js";
 import { Screen } from "../models/screenModal.js";
 import { Movie } from "../models/movieModal.js";
 import { Booking } from "../models/bookingModel.js";
+import mongoose from "mongoose";
 
 
 const registerUser = asyncHandler(async (req, res, next) => {
@@ -424,14 +425,26 @@ const movieDetailsBooking = asyncHandler(async (req, res, next) => {
 
     console.log("Theatre Data is: ", getTheatreData);
 
+
+
     const movieData = {
         _id: theatreId,
         MovieName: getMovieDetails.movieName,
         TheatreName: [getTheatreData.theatreName],
         TheatreAddress: getTheatreData.theatreAddress,
         ShowDate: [getMovieDetails.showsDate],
-        ShowTimings: [getMovieDetails.showsStartTime]
+        ShowTimings: [
+            {
+                _id: getMovieDetails._id,
+                showId: getMovieDetails._id,
+                screenId: getMovieDetails.screenId,
+                startTime: getMovieDetails.showsStartTime,
+                showTime: getMovieDetails.showsStartTime,
+            },
+        ],
     };
+
+
 
     console.log("Movie Data is: ", movieData);
 
@@ -482,10 +495,80 @@ const getSeatsLayout = asyncHandler(async (req, res, next) => {
         .json(new ApiResponse(200, "Seat Data fetched", { seatData: seatData }))
 })
 
-const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
-    const userData = req.user;
+const validateSeatAgainstScreen = (screen, seat) => {
+    const seatLabel = seat.seatLabel?.trim().toUpperCase();
+    const seatId = seat.seatId?.trim();
 
-    if (!userData?._id) {
+    if (!seatLabel || !seatId) {
+        throw new ApiError(400, "Seat ID and seat label are required");
+    }
+
+    const match = seatLabel.match(/^([A-Z]+)([1-9]\d*)$/);
+
+    if (!match) {
+        throw new ApiError(400, `Invalid seat label: ${seatLabel}`);
+    }
+
+    const rowLabel = match[1];
+    const columnNumber = Number(match[2]);
+
+    const rowToNumber = (label) =>
+        [...label].reduce(
+            (number, character) =>
+                number * 26 + character.charCodeAt(0) - 64,
+            0
+        );
+
+    const requestedRow = rowToNumber(rowLabel);
+
+    let firstRow = 1;
+
+    for (const category of screen.seatCategories) {
+        const rowCount = Number(category.rows);
+        const columnCount = Number(category.columns);
+
+        if (
+            !Number.isInteger(rowCount) ||
+            !Number.isInteger(columnCount) ||
+            rowCount < 1 ||
+            columnCount < 1
+        ) {
+            throw new ApiError(500, "Invalid screen seat configuration");
+        }
+
+        const lastRow = firstRow + rowCount - 1;
+
+        if (requestedRow >= firstRow && requestedRow <= lastRow) {
+            if (columnNumber > columnCount) {
+                throw new ApiError(
+                    400,
+                    `Seat ${seatLabel} does not exist on this screen`
+                );
+            }
+
+            if (seat.seatType !== category.seatType) {
+                throw new ApiError(
+                    400,
+                    `Invalid seat category for seat ${seatLabel}`
+                );
+            }
+
+            return category.seatType;
+        }
+
+        firstRow = lastRow + 1;
+    }
+
+    throw new ApiError(
+        400,
+        `Seat ${seatLabel} does not exist on this screen`
+    );
+};
+
+const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
         throw new ApiError(401, "Unauthorized User");
     }
 
@@ -494,48 +577,63 @@ const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
     const ids = [movieId, theatreId, screenId, showId];
 
     if (
-        ids.some(id => !id || !mongoose.Types.ObjectId.isValid(id)) ||
+        ids.some(
+            (id) =>
+                typeof id !== "string" ||
+                !mongoose.Types.ObjectId.isValid(id)
+        ) ||
         !Array.isArray(selectedSeats) ||
         selectedSeats.length === 0
     ) {
         throw new ApiError(400, "Invalid booking details");
     }
 
-    const seatIds = selectedSeats.map(seat => seat?.seatId);
+    if (selectedSeats.length > 20) {
+        throw new ApiError(400, "You cannot select more than 20 seats");
+    }
+
+    const seatIds = selectedSeats.map((seat) => seat?.seatId);
 
     if (
-        seatIds.some(id => typeof id !== "string" || !id.trim()) ||
-        new Set(seatIds).size !== seatIds.length ||
-        selectedSeats.some(seat =>
-            !seat?.seatLabel ||
-            !["Normal", "Premium", "Recliner"].includes(seat?.seatType)
+        seatIds.some(
+            (id) => typeof id !== "string" || !id.trim()
+        ) ||
+        new Set(seatIds.map((id) => id.trim().toUpperCase())).size !==
+        seatIds.length ||
+        selectedSeats.some(
+            (seat) =>
+                typeof seat?.seatLabel !== "string" ||
+                typeof seat?.seatType !== "string" ||
+                !["Normal", "Premium", "Recliner"].includes(seat.seatType)
         )
     ) {
         throw new ApiError(400, "Invalid or duplicate selected seats");
     }
 
-    const user = await User.findById(userData._id).select("_id");
+    const user = await User.findById(userId).select("_id");
 
     if (!user) {
         throw new ApiError(401, "User account not found");
     }
-
     const [movie, theatre, screen, show] = await Promise.all([
         Movie.findOne({
             _id: movieId,
             isDeleted: false,
             availabilityType: { $in: ["Theatre", "Both"] }
         }),
+
         Theatre.findOne({
             _id: theatreId,
             theatreStatus: "Approved",
             theatreIsBookingAvailable: true
         }),
+
         Screen.findOne({
             _id: screenId,
             theatreId,
             screenStatus: "Available"
         }),
+
         Shows.findOne({
             _id: showId,
             movieId,
@@ -546,7 +644,10 @@ const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
     ]);
 
     if (!movie) {
-        throw new ApiError(404, "Movie not found or unavailable for theatre booking");
+        throw new ApiError(
+            404,
+            "Movie not found or unavailable for theatre booking"
+        );
     }
 
     if (!theatre) {
@@ -561,51 +662,64 @@ const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Scheduled show not found");
     }
 
-    const now = new Date();
-    const showDate = new Date(show.showsDate);
-    const [hours, minutes] = show.showsStartTime.split(":").map(Number);
-
     if (
-        Number.isNaN(showDate.getTime()) ||
-        !Number.isInteger(hours) ||
-        !Number.isInteger(minutes) ||
-        hours < 0 ||
-        hours > 23 ||
-        minutes < 0 ||
-        minutes > 59
+        !Array.isArray(screen.seatCategories) ||
+        screen.seatCategories.length === 0 ||
+        !Array.isArray(show.seatPrices)
     ) {
+        throw new ApiError(400, "Screen layout or show pricing is unavailable");
+    }
+
+    const showDate = new Date(show.showsDate);
+    const timeMatch =
+        typeof show.showsStartTime === "string"
+            ? show.showsStartTime.match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+            : null;
+
+    if (Number.isNaN(showDate.getTime()) || !timeMatch) {
         throw new ApiError(400, "Invalid show date or time");
     }
 
+    const [hours, minutes] = timeMatch.slice(1).map(Number);
     showDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
 
     if (showDate <= now) {
         throw new ApiError(400, "This show is no longer available for booking");
     }
 
-    const screenCategories = new Set(
-        screen.seatCategories.map(category => category.seatType)
-    );
+    const showPrices = new Map();
 
-    const showPrices = new Map(
-        show.seatPrices.map(item => [item.seatType, item.price])
-    );
-
-    const verifiedSeats = selectedSeats.map(seat => {
-        if (!screenCategories.has(seat.seatType)) {
-            throw new ApiError(400, `Invalid seat category: ${seat.seatType}`);
+    for (const item of show.seatPrices) {
+        if (
+            !["Normal", "Premium", "Recliner"].includes(item.seatType) ||
+            !Number.isFinite(item.price) ||
+            item.price < 0 ||
+            showPrices.has(item.seatType)
+        ) {
+            throw new ApiError(500, "Invalid show pricing configuration");
         }
 
-        const price = showPrices.get(seat.seatType);
+        showPrices.set(item.seatType, item.price);
+    }
+    console.log("Selected seats received:", selectedSeats);
 
-        if (!Number.isFinite(price) || price < 0) {
-            throw new ApiError(400, `Price unavailable for ${seat.seatType} seats`);
+    const verifiedSeats = selectedSeats.map((seat) => {
+        const seatType = validateSeatAgainstScreen(screen, seat);
+        const price = showPrices.get(seatType);
+
+        if (price === undefined) {
+            throw new ApiError(
+                400,
+                `Price unavailable for ${seatType} seats`
+            );
         }
 
         return {
-            seatId: seat.seatId.trim(),
-            seatLabel: seat.seatLabel.trim(),
-            seatType: seat.seatType,
+            seatId: seat.seatId.trim().toUpperCase(),
+            seatLabel: seat.seatLabel.trim().toUpperCase(),
+            seatType,
             price
         };
     });
@@ -618,9 +732,11 @@ const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
     const convenienceFee = 0;
     const totalAmount = ticketSubtotal + convenienceFee;
 
+    const normalizedSeatIds = verifiedSeats.map((seat) => seat.seatId);
+
     const activeBookings = await Booking.find({
         showId: show._id,
-        "selectedSeats.seatId": { $in: seatIds },
+        "selectedSeats.seatId": { $in: normalizedSeatIds },
         $or: [
             {
                 bookingStatus: "Confirmed",
@@ -635,13 +751,15 @@ const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
     }).select("selectedSeats.seatId");
 
     const unavailableSeats = new Set(
-        activeBookings.flatMap(booking =>
-            booking.selectedSeats.map(seat => seat.seatId)
+        activeBookings.flatMap((booking) =>
+            booking.selectedSeats.map((seat) =>
+                seat.seatId.toUpperCase()
+            )
         )
     );
 
-    const conflictingSeats = seatIds.filter(
-        seatId => unavailableSeats.has(seatId)
+    const conflictingSeats = normalizedSeatIds.filter((seatId) =>
+        unavailableSeats.has(seatId)
     );
 
     if (conflictingSeats.length > 0) {
@@ -651,7 +769,17 @@ const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
         );
     }
 
-    res.status(200).json({
+    console.log("Booking verification completed successfully");
+    console.log("Verified booking data:", {
+        movieId: movie._id,
+        theatreId: theatre._id,
+        screenId: screen._id,
+        showId: show._id,
+        selectedSeats: verifiedSeats,
+        totalAmount
+    });
+
+    return res.status(200).json({
         success: true,
         message: "Booking details verified successfully",
         data: {

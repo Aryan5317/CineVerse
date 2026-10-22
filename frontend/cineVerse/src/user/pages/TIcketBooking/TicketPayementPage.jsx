@@ -1,29 +1,43 @@
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 function TicketPayementPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { movieId, theatreId } = useParams();
+
+
+    const verifiedBookingDetails =
+        location.state?.verifiedBookingDetails;
 
     const {
-        selectedTheatre,
-        selectedDate,
-        selectedTime,
+        movieId,
+        movieName,
+        theatreId,
+        theatreName,
+        screenId,
+        screenNumber,
+        showId,
+        showDate,
+        showTime,
         selectedSeats = [],
-        totalAmount = 0,
-        screenFormat,
-    } = location.state || {};
+        ticketSubtotal,
+        convenienceFee,
+        totalAmount,
+    } = verifiedBookingDetails || {};
 
     const [paymentMethod, setPaymentMethod] = useState("upi");
     const [isProcessing, setIsProcessing] = useState(false);
+    const [paymentMessage, setPaymentMessage] = useState("");
 
     const formatDate = (date) => {
-        if (!date) return "Not selected";
+        if (!date) return "Not available";
 
         const parsedDate = new Date(date);
 
-        if (Number.isNaN(parsedDate.getTime())) return date;
+        if (Number.isNaN(parsedDate.getTime())) {
+            return "Not available";
+        }
 
         return parsedDate.toLocaleDateString("en-IN", {
             day: "2-digit",
@@ -32,29 +46,51 @@ function TicketPayementPage() {
         });
     };
 
-    const formatPrice = (amount) =>
-        `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+    const formatPrice = (amount) => {
+        if (typeof amount !== "number" || !Number.isFinite(amount)) {
+            return "—";
+        }
 
-    const handlePayment = () => {
-        // setIsProcessing(true);
-
-        console.log("Payment button is clicked")
-        navigate(`/movie/${movieId}/${theatreId}/payment`, {
-            state: {
-                selectedTheatre,
-                selectedDate,
-                selectedTime,
-                selectedSeats,
-                totalAmount,
-                screenFormat,
-                paymentMethod,
-            },
-        });
+        return `₹${amount.toLocaleString("en-IN")}`;
     };
 
-    if (!location.state || selectedSeats.length === 0) {
+    const hasValidBooking =
+        Boolean(
+            verifiedBookingDetails &&
+            movieId &&
+            theatreId &&
+            screenId &&
+            showId &&
+            movieName &&
+            theatreName &&
+            showTime &&
+            typeof totalAmount === "number" &&
+            typeof ticketSubtotal === "number" &&
+            typeof convenienceFee === "number" &&
+            Array.isArray(selectedSeats) &&
+            selectedSeats.length > 0 &&
+            selectedSeats.every(
+                (seat) =>
+                    seat?.seatId &&
+                    seat?.seatLabel &&
+                    seat?.seatType &&
+                    typeof seat?.price === "number"
+            )
+        );
+
+    const handlePayment = () => {
+        if (!hasValidBooking || isProcessing) {
+            return;
+        }
+
+        setPaymentMessage(
+            "Payment gateway integration is pending. No payment has been made."
+        );
+    };
+
+    if (!hasValidBooking) {
         return (
-            <div className="min-h-screen bg-slate-50 px-5 flex items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center bg-slate-50 px-5">
                 <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-sm">
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-500">
                         <svg
@@ -78,13 +114,15 @@ function TicketPayementPage() {
                     </h1>
 
                     <p className="mt-2 text-sm leading-6 text-slate-500">
-                        Please select your seats and review your booking
-                        before proceeding to payment.
+                        Your verified booking details are missing or
+                        incomplete. Please return to the booking summary
+                        and verify your booking again.
                     </p>
 
                     <button
+                        type="button"
                         onClick={() => navigate(-1)}
-                        className="mt-6 w-full rounded-xl bg-sky-500 px-5 py-3 font-semibold text-white transition active:scale-[0.98]"
+                        className="mt-6 w-full rounded-xl bg-sky-500 px-5 py-3 font-semibold text-white transition hover:bg-sky-600 active:scale-[0.98]"
                     >
                         Go Back
                     </button>
@@ -98,9 +136,10 @@ function TicketPayementPage() {
             <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
                 <div className="mx-auto flex max-w-lg items-center gap-4 px-4 py-4">
                     <button
+                        type="button"
                         onClick={() => navigate(-1)}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 transition active:scale-95"
                         aria-label="Go back"
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 transition hover:bg-slate-200 active:scale-95"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -123,7 +162,7 @@ function TicketPayementPage() {
                             Complete Payment
                         </h1>
                         <p className="text-xs text-slate-500">
-                            Secure your movie tickets
+                            Review your verified booking
                         </p>
                     </div>
 
@@ -150,20 +189,19 @@ function TicketPayementPage() {
             </header>
 
             <main className="mx-auto max-w-lg space-y-5 px-4 py-5">
+                {/* Verified booking information */}
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-4 text-white">
                         <p className="text-xs font-medium text-sky-100">
-                            YOUR BOOKING
+                            YOUR VERIFIED BOOKING
                         </p>
+
                         <h2 className="mt-1 text-lg font-bold">
-                            {selectedTheatre?.theatreName ||
-                                selectedTheatre?.name ||
-                                "Selected Theatre"}
+                            {movieName}
                         </h2>
+
                         <p className="mt-1 text-sm text-sky-100">
-                            {selectedTheatre?.location ||
-                                selectedTheatre?.address ||
-                                "Theatre details"}
+                            {theatreName}
                         </p>
                     </div>
 
@@ -174,7 +212,7 @@ function TicketPayementPage() {
                                     Date
                                 </p>
                                 <p className="mt-1 font-semibold">
-                                    {formatDate(selectedDate)}
+                                    {formatDate(showDate)}
                                 </p>
                             </div>
 
@@ -183,16 +221,16 @@ function TicketPayementPage() {
                                     Show Time
                                 </p>
                                 <p className="mt-1 font-semibold">
-                                    {selectedTime || "Not selected"}
+                                    {showTime}
                                 </p>
                             </div>
 
                             <div>
                                 <p className="text-xs text-slate-500">
-                                    Screen Format
+                                    Screen
                                 </p>
                                 <p className="mt-1 font-semibold">
-                                    {screenFormat || "Standard"}
+                                    {screenNumber}
                                 </p>
                             </div>
 
@@ -211,19 +249,16 @@ function TicketPayementPage() {
 
                         <div className="border-t border-dashed border-slate-200 pt-4">
                             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                Selected Seats
+                                Verified Seats
                             </p>
 
                             <div className="flex flex-wrap gap-2">
-                                {selectedSeats.map((seat, index) => (
+                                {selectedSeats.map((seat) => (
                                     <span
-                                        key={seat.id || seat._id || index}
+                                        key={seat.seatId}
                                         className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700"
                                     >
-                                        {seat.id ||
-                                            seat.seatNumber ||
-                                            seat.label ||
-                                            `Seat ${index + 1}`}
+                                        {seat.seatLabel}
                                     </span>
                                 ))}
                             </div>
@@ -231,157 +266,69 @@ function TicketPayementPage() {
                     </div>
                 </section>
 
+                {/* Payment method selection */}
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <h2 className="text-base font-bold">
                         Select Payment Method
                     </h2>
 
                     <div className="mt-4 space-y-3">
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("upi")}
-                            className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
-                                paymentMethod === "upi"
-                                    ? "border-sky-500 bg-sky-50"
-                                    : "border-slate-200 bg-white"
-                            }`}
-                        >
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-sky-600 shadow-sm">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-6 w-6"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={1.8}
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M13 2 4 14h7l-1 8 10-12h-7l1-8Z"
-                                    />
-                                </svg>
-                            </div>
-
-                            <div className="flex-1">
-                                <p className="font-semibold">UPI</p>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Pay using a UPI app
-                                </p>
-                            </div>
-
-                            <span
-                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                                    paymentMethod === "upi"
-                                        ? "border-sky-500"
-                                        : "border-slate-300"
+                        {[
+                            {
+                                value: "upi",
+                                title: "UPI",
+                                description: "Pay using a UPI app",
+                            },
+                            {
+                                value: "card",
+                                title: "Credit / Debit Card",
+                                description: "Pay using your bank card",
+                            },
+                            {
+                                value: "netbanking",
+                                title: "Net Banking",
+                                description: "Pay through your bank",
+                            },
+                        ].map((method) => (
+                            <button
+                                key={method.value}
+                                type="button"
+                                onClick={() => {
+                                    setPaymentMethod(method.value);
+                                    setPaymentMessage("");
+                                }}
+                                className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
+                                    paymentMethod === method.value
+                                        ? "border-sky-500 bg-sky-50"
+                                        : "border-slate-200 bg-white hover:border-sky-300"
                                 }`}
                             >
-                                {paymentMethod === "upi" && (
-                                    <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
-                                )}
-                            </span>
-                        </button>
+                                <div className="flex-1">
+                                    <p className="font-semibold">
+                                        {method.title}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {method.description}
+                                    </p>
+                                </div>
 
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("card")}
-                            className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
-                                paymentMethod === "card"
-                                    ? "border-sky-500 bg-sky-50"
-                                    : "border-slate-200 bg-white"
-                            }`}
-                        >
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-sky-600 shadow-sm">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-6 w-6"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={1.8}
+                                <span
+                                    className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                                        paymentMethod === method.value
+                                            ? "border-sky-500"
+                                            : "border-slate-300"
+                                    }`}
                                 >
-                                    <rect
-                                        width="20"
-                                        height="15"
-                                        x="2"
-                                        y="4.5"
-                                        rx="2"
-                                    />
-                                    <path d="M2 9.5h20" />
-                                </svg>
-                            </div>
-
-                            <div className="flex-1">
-                                <p className="font-semibold">
-                                    Credit / Debit Card
-                                </p>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Pay using your bank card
-                                </p>
-                            </div>
-
-                            <span
-                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                                    paymentMethod === "card"
-                                        ? "border-sky-500"
-                                        : "border-slate-300"
-                                }`}
-                            >
-                                {paymentMethod === "card" && (
-                                    <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
-                                )}
-                            </span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("netbanking")}
-                            className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
-                                paymentMethod === "netbanking"
-                                    ? "border-sky-500 bg-sky-50"
-                                    : "border-slate-200 bg-white"
-                            }`}
-                        >
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-sky-600 shadow-sm">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-6 w-6"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={1.8}
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M2 21h20M12 3 2 8h20L12 3Z"
-                                    />
-                                </svg>
-                            </div>
-
-                            <div className="flex-1">
-                                <p className="font-semibold">Net Banking</p>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Pay through your bank
-                                </p>
-                            </div>
-
-                            <span
-                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                                    paymentMethod === "netbanking"
-                                        ? "border-sky-500"
-                                        : "border-slate-300"
-                                }`}
-                            >
-                                {paymentMethod === "netbanking" && (
-                                    <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
-                                )}
-                            </span>
-                        </button>
+                                    {paymentMethod === method.value && (
+                                        <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
+                                    )}
+                                </span>
+                            </button>
+                        ))}
                     </div>
                 </section>
 
+                {/* Amounts from the backend response */}
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <h2 className="text-base font-bold">
                         Payment Summary
@@ -389,16 +336,18 @@ function TicketPayementPage() {
 
                     <div className="mt-4 space-y-3 text-sm">
                         <div className="flex justify-between gap-3 text-slate-600">
-                            <span>Tickets ({selectedSeats.length})</span>
+                            <span>
+                                Tickets ({selectedSeats.length})
+                            </span>
                             <span className="font-medium text-slate-900">
-                                {formatPrice(totalAmount)}
+                                {formatPrice(ticketSubtotal)}
                             </span>
                         </div>
 
                         <div className="flex justify-between gap-3 text-slate-600">
                             <span>Convenience fee</span>
                             <span className="font-medium text-slate-900">
-                                Included
+                                {formatPrice(convenienceFee)}
                             </span>
                         </div>
 
@@ -439,12 +388,20 @@ function TicketPayementPage() {
                     </svg>
 
                     <p className="text-xs leading-5 text-slate-600">
-                        Your payment will be processed securely once the
-                        payment gateway is integrated. Tickets are not
-                        confirmed until the server verifies the payment
-                        and completes the booking.
+                        Payment has not been processed yet. Your booking
+                        will only be confirmed after the payment gateway
+                        and backend verification are integrated.
                     </p>
                 </div>
+
+                {paymentMessage && (
+                    <p
+                        role="status"
+                        className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+                    >
+                        {paymentMessage}
+                    </p>
+                )}
             </main>
 
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
@@ -462,27 +419,9 @@ function TicketPayementPage() {
                         type="button"
                         onClick={handlePayment}
                         disabled={isProcessing}
-                        className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 font-bold text-white shadow-lg shadow-sky-100 transition hover:bg-sky-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex min-h-12 flex-1 items-center justify-center rounded-xl bg-sky-500 px-5 py-3 font-bold text-white shadow-lg shadow-sky-100 transition hover:bg-sky-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        {isProcessing
-                            ? "Please wait..."
-                            : "Pay Now"}
-                        {!isProcessing && (
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 12h14m-7-7 7 7-7 7"
-                                />
-                            </svg>
-                        )}
+                        {isProcessing ? "Please wait..." : "Pay Now"}
                     </button>
                 </div>
             </div>

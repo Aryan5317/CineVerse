@@ -1,6 +1,7 @@
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { uesEffect } from "react"
+import { useState } from "react"
+import BookingTicketSummaryVerification from "../../services/MovieTicket/BookingTicketSummaryVerification";
 
 const formatDate = (date) => {
     if (!date) return "Not selected";
@@ -31,6 +32,8 @@ function TicketBookingSummaryPage() {
         totalAmount = 0,
         screenFormat,
     } = state || {};
+    const [processedMessage, setProcessedMessage] = useState("")
+    const [loading, setLoading] = useState(false)
 
     if (!state || selectedSeats.length === 0) {
         return (
@@ -63,22 +66,95 @@ function TicketBookingSummaryPage() {
         return groups;
     }, {});
 
-    const ProceedPaymentButtonWork = () => {
-        console.log("Proceed payment button is clicked")
-        navigate(
-            `/movie/${movieId}/${theatreId}/payment`,
-            {
-                state: {
-                    selectedTheatre,
-                    selectedDate,
-                    selectedTime,
-                    selectedSeats,
-                    totalAmount,
-                    screenFormat,
-                },
+
+    const ProceedPaymentButtonWork = async () => {
+        setLoading(true);
+        setProcessedMessage("");
+        try {
+            const screenId =
+                selectedTime?.screenId?._id ||
+                selectedTime?.screenId ||
+                selectedTime?.screen?._id ||
+                selectedTheatre?.screenId?._id ||
+                selectedTheatre?.screenId;
+
+            const showId =
+                selectedTime?.showId?._id ||
+                selectedTime?.showId ||
+                selectedTime?._id;
+            if (!movieId || !theatreId || !screenId || !showId) {
+                throw new Error(
+                    "Movie, theatre, screen, or show details are missing. Please select your show again."
+                );
             }
-        )
-    }
+
+
+            if (!selectedSeats.length) {
+                throw new Error("Please select at least one seat.");
+            }
+
+
+            const invalidSeat = selectedSeats.some(
+                (seat) =>
+                    !seat.id ||
+                    !(seat.label || seat.seatLabel) ||
+                    !["Normal", "Premium", "Recliner"].includes(seat.seatType)
+            );
+
+            if (invalidSeat) {
+                throw new Error("Some selected seat details are invalid. Please select your seats again.");
+            }
+
+
+            const requestData = {
+                movieId,
+                theatreId,
+                screenId,
+                showId,
+                selectedSeats: selectedSeats.map((seat) => ({
+                    seatId: seat.id,
+                    seatLabel: seat.label || seat.seatLabel,
+                    seatType: seat.seatType,
+                })),
+            };
+
+            const responseBody =
+                await BookingTicketSummaryVerification(requestData);
+
+            console.log("Response body is:", responseBody);
+
+            if (!responseBody?.success || !responseBody?.data) {
+                throw new Error(
+                    responseBody?.message || "Unable to verify booking details."
+                );
+            }
+
+            const verifiedData = responseBody.data;
+
+
+
+            navigate(`/movie/${movieId}/${theatreId}/payment`, {
+                state: {
+                    verifiedBookingDetails: verifiedData,
+                },
+            });
+
+        } catch (error) {
+            console.error(
+                "Booking verification failed:",
+                error
+            );
+
+            setProcessedMessage(
+                error?.response?.data?.message ||
+                error?.message ||
+                "Unable to verify your booking. Please try again."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -102,6 +178,11 @@ function TicketBookingSummaryPage() {
                 </header>
 
                 <main className="space-y-4 px-4 pt-5">
+                    {processedMessage && (
+                        <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            {processedMessage}
+                        </p>
+                    )}
                     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="flex items-start gap-3">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-2xl">
@@ -241,23 +322,33 @@ function TicketBookingSummaryPage() {
                 </main>
             </div>
 
+
             <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-4px_18px_rgba(15,23,42,0.06)]">
                 <div className="mx-auto flex w-full max-w-md items-center gap-3">
                     <button
+                        type="button"
                         onClick={() => navigate(-1)}
-                        className="h-12 w-[34%] rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700"
+                        disabled={loading}
+                        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        Back
+                        <span>←</span>
+                        <span>Back</span>
                     </button>
+
                     <button
-                        onClick={() => ProceedPaymentButtonWork()}
-                        className="flex h-12 flex-1 items-center justify-between rounded-xl bg-blue-600 px-4 text-sm font-bold text-white"
+                        type="button"
+                        onClick={ProceedPaymentButtonWork}
+                        disabled={loading}
+                        className="flex h-12 flex-[2] items-center justify-between rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        <span>Proceed to Payment</span>
-                        <span>→</span>
+                        <span>
+                            {loading ? "Verifying booking..." : "Proceed to Payment"}
+                        </span>
+                        <span>{loading ? "..." : "→"}</span>
                     </button>
                 </div>
             </footer>
+
         </div>
     );
 }

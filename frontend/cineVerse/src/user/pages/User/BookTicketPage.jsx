@@ -388,19 +388,18 @@ function BookTicketPage() {
                             <div className="grid grid-cols-2 gap-2.5">
                                 {movieData?.ShowTimings?.map((time) => (
                                     <button
-                                        key={time}
+                                        key={time._id}
                                         type="button"
                                         onClick={() => SetSelectedMovieTime(time)}
-                                        className={`rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm transition-all duration-200 active:scale-[0.98] ${selectedTime === time
-                                            ? "border-blue-600 bg-blue-600 text-white shadow-md ring-2 ring-blue-200"
-                                            : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50"
+                                        className={`rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm transition-all duration-200 active:scale-[0.98] ${selectedTime?._id === time._id
+                                                ? "border-blue-600 bg-blue-600 text-white shadow-md ring-2 ring-blue-200"
+                                                : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50"
                                             }`}
                                     >
-                                        {time}
+                                        {time.startTime}
                                     </button>
                                 ))}
                             </div>
-
                             {errors.selectedTime && (
                                 <p className="mt-2 text-sm font-medium text-red-600">
                                     {errors.selectedTime}
