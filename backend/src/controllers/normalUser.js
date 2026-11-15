@@ -377,10 +377,8 @@ const movieDetailsBooking = asyncHandler(async (req, res, next) => {
     const userData = req.user;
 
     if (!userData) {
-        throw new ApiError(401, "UnAuthorized User");
+        throw new ApiError(401, "Unauthorized User");
     }
-
-    console.log("User data from req.user is: ", userData);
 
     const { movieId } = req.params;
 
@@ -388,112 +386,180 @@ const movieDetailsBooking = asyncHandler(async (req, res, next) => {
         throw new ApiError(400, "Movie Id is required");
     }
 
-    console.log("Movie id is: ", movieId);
-
     const { state, district } = req.query;
 
-    if (!state?.trim()) {
-        throw new ApiError(400, "State is required");
+    if (!state?.trim() || !district?.trim()) {
+        throw new ApiError(400, "State and District are required");
     }
 
-    if (!district?.trim()) {
-        throw new ApiError(400, "District is required");
+    const allShows = await Shows.find({
+        movieId,
+        showStatus: "Scheduled"
+    }).sort({ showsDate: 1 });
+
+    if (!allShows.length) {
+        throw new ApiError(404, "No upcoming shows found");
     }
 
-    const getMovieDetails = await Shows.findOne({
-        movieId: movieId
+    const now = new Date();
+
+    const upcomingShows = allShows.filter((show) => {
+        const datePart = new Date(show.showsDate)
+            .toISOString()
+            .slice(0, 10);
+
+        const showDateTime = new Date(
+            `${datePart}T${show.showsStartTime}:00+05:30`
+        );
+
+        return showDateTime > now;
     });
 
-    if (!getMovieDetails) {
-        throw new ApiError(404, "No Movie found");
+    if (!upcomingShows.length) {
+        throw new ApiError(404, "No upcoming shows available");
     }
 
-    console.log("Movie details is: ", getMovieDetails);
+    const theatreIds = [
+        ...new Set(
+            upcomingShows.map(show => String(show.theatreId))
+        )
+    ];
 
-    const theatreId = getMovieDetails.theatreId;
-    console.log("Theatre Id is: ", theatreId)
-
-    const getTheatreData = await Theatre.findOne({
-        _id: theatreId,
+    const theatres = await Theatre.find({
+        _id: { $in: theatreIds },
         "theatreAddress.theatreState": state.trim(),
         "theatreAddress.theatreDistrict": district.trim()
     });
 
-    if (!getTheatreData) {
-        throw new ApiError(404, "No theatre Found");
+    if (!theatres.length) {
+        throw new ApiError(404, "No Theatre Found");
     }
 
-    console.log("Theatre Data is: ", getTheatreData);
+    const getTheatreData = theatres[0];
 
+    const theatreShows = upcomingShows.filter(
+        show =>
+            String(show.theatreId) === String(getTheatreData._id)
+    );
 
+    if (!theatreShows.length) {
+        throw new ApiError(404, "No upcoming shows found for this theatre");
+    }
+
+    const showDateMap = new Map();
+
+    theatreShows.forEach(show => {
+        const date = new Date(show.showsDate)
+            .toISOString()
+            .slice(0, 10);
+
+        if (!showDateMap.has(date)) {
+            showDateMap.set(date, {
+                date: show.showsDate,
+                timings: []
+            });
+        }
+
+        showDateMap.get(date).timings.push({
+            _id: show._id,
+            showId: show._id,
+            screenId: show.screenId,
+            showDate: show.showsDate,
+            startTime: show.showsStartTime,
+            showTime: show.showsStartTime
+        });
+    });
+
+    const groupedDates = [...showDateMap.values()];
 
     const movieData = {
-        _id: theatreId,
-        MovieName: getMovieDetails.movieName,
+        _id: getTheatreData._id,
+        MovieName: theatreShows[0].movieName,
         TheatreName: [getTheatreData.theatreName],
         TheatreAddress: getTheatreData.theatreAddress,
-        ShowDate: [getMovieDetails.showsDate],
-        ShowTimings: [
-            {
-                _id: getMovieDetails._id,
-                showId: getMovieDetails._id,
-                screenId: getMovieDetails.screenId,
-                startTime: getMovieDetails.showsStartTime,
-                showTime: getMovieDetails.showsStartTime,
-            },
-        ],
+
+        ShowDate: groupedDates.map(item => item.date),
+
+        ShowTimings: groupedDates.flatMap(
+            item => item.timings
+        )
     };
 
-
-
-    console.log("Movie Data is: ", movieData);
+    console.log("Upcoming Theatre Shows:", movieData);
 
     return res.status(200).json(
-        new ApiResponse(200, "Movie Data fetched", { data: movieData })
+        new ApiResponse(200, "Movie Data fetched", {
+            data: movieData
+        })
     );
 });
 
-const getSeatsLayout = asyncHandler(async (req, res, next) => {
-    const userData = req.user;
-    if (!userData) {
-        throw new ApiError(401, "UnAuthorized User");
+const getSeatsLayout = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    if (!userId) {
+        throw new ApiError(401, "Unauthorized User");
     }
-    console.log("User data from req.user is: ", userData);
+
     const { movieId, theatreId } = req.params;
-    if (!movieId) {
-        throw new ApiError(400, "Movie Id is required");
+    const { showId } = req.query;
+
+    if (
+        [movieId, theatreId, showId].some(
+            (id) => typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)
+        )
+    ) {
+        throw new ApiError(400, "Valid movie, theatre and show are required");
     }
-    console.log("Movie id is: ", movieId);
-    if (!theatreId) {
-        throw new ApiError(400, "Theatre Id is required");
-    }
-    console.log("Movie id is: ", theatreId);
-    const getMovieDetails = await Shows.findOne({
-        movieId: movieId,
-        theatreId: theatreId,
+
+    const show = await Shows.findOne({
+        _id: showId,
+        movieId,
+        theatreId,
+        showStatus: "Scheduled",
     });
-    if (!getMovieDetails) {
-        throw new ApiError(404, "No Movie found");
+    if (!show) {
+        throw new ApiError(404, "Show not found");
     }
-    console.log("Movie details is: ", getMovieDetails);
-    const screenId = getMovieDetails.screenId
-    const getScreenDetails = await Screen.findOne({
-        _id: screenId,
-        theatreId: theatreId
-    })
-    if (!getScreenDetails) {
-        throw new ApiError(404, "No scrren found");
+
+    const screen = await Screen.findOne({ _id: show.screenId, theatreId });
+    if (!screen) {
+        throw new ApiError(404, "Screen not found");
     }
-    console.log("Screen Details is: ", getScreenDetails);
-    const seatData = {
-        seats: getScreenDetails.seatCategories,
-        screenFormat: getScreenDetails.screenFormat,
-        seatPrice: getMovieDetails.seatPrices,
-    }
-    console.log("Seat Data are: ", seatData)
-    return res.status(200)
-        .json(new ApiResponse(200, "Seat Data fetched", { seatData: seatData }))
-})
+
+    const bookings = await Booking.find({
+        showId: show._id,
+        $or: [
+            { bookingStatus: "Confirmed", paymentStatus: "Paid" },
+            {
+                bookingStatus: "Pending",
+                paymentStatus: "Pending",
+                seatHoldExpiresAt: { $gt: new Date() },
+                userId: { $ne: userId },
+            },
+        ],
+    }).select("selectedSeats.seatId");
+
+    const bookedSeats = [
+        ...new Set(
+            bookings.flatMap((b) =>
+                b.selectedSeats.map((s) => s.seatId.toUpperCase())
+            )
+        ),
+    ];
+
+    return res.status(200).json(
+        new ApiResponse(200, "Seat Data fetched", {
+            seatData: {
+                seats: screen.seatCategories,
+                screenFormat: screen.screenFormat,
+                seatPrice: show.seatPrices,
+                screenId: screen._id,
+                showId: show._id,
+                bookedSeats,
+            },
+        })
+    );
+});
 
 const validateSeatAgainstScreen = (screen, seat) => {
     const seatLabel = seat.seatLabel?.trim().toUpperCase();
@@ -801,7 +867,7 @@ const verfiyTicketBookingDetails = asyncHandler(async (req, res) => {
 });
 
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken, verifyUser, forgetPassword, verifyOTP, resetPassword, movieDetailsBooking, getSeatsLayout, verfiyTicketBookingDetails }
+export { registerUser, loginUser, logoutUser, refreshAccessToken, verifyUser, forgetPassword, verifyOTP, resetPassword, movieDetailsBooking, getSeatsLayout, verfiyTicketBookingDetails}
 
 
 // const testController = asyncHandler(async (req, res, next) => {

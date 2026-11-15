@@ -264,30 +264,44 @@ const getStreamingMovie = asyncHandler(async (req, res, next) => {
 })
 
 const getTheatreMovies = asyncHandler(async (req, res, next) => {
-
-    const todayDate = new Date()
-    todayDate.setHours(0, 0, 0, 0)
-    console.log("Todays Date is: ", todayDate)
-    // const allmovie = await Movie.find({
-    //     $or: [
-    //         { availabilityType: "Theatre" },
-    //         { availabilityType: "Both" }
-    //     ]
-    // })
-    //     .select("-createdBy -description -director -genre -cast -language")
+    const now = new Date();
     const allmovie = await Shows.find({
         showStatus: "Scheduled",
-        showsDate: {$gte: todayDate},
         movieId: { $ne: null },
-    })
+        $expr: {
+            $gt: [
+                {
+                    $dateFromString: {
+                        dateString: {
+                            $concat: [
+                                {
+                                    $dateToString: {
+                                        format: "%Y-%m-%d",
+                                        date: "$showsDate",
+                                        timezone: "Asia/Kolkata"
+                                    }
+                                },
+                                "T",
+                                "$showsStartTime",
+                                ":00"
+                            ]
+                        },
+                        timezone: "Asia/Kolkata"
+                    }
+                },
+                now
+            ]
+        }
+    });
 
+    console.log("Current Date and Time:", now);
+    console.log("All Upcoming Theatre Movies:", allmovie);
 
-    console.log("All movies are: ", allmovie)
+    return res.status(200).json(
+        new ApiResponse(200, "Theatre movies fetched", allmovie)
+    );
 
-    return res.status(200)
-        .json(new ApiResponse(200, "Theatre movies fetched", allmovie))
-
-})
+});
 
 const editMovie = asyncHandler(async (req, res, next) => {
 

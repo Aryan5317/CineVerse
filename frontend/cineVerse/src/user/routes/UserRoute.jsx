@@ -2,6 +2,7 @@ import HomePage from "../pages/User/HomePage";
 import LoginPage from "../pages/User/LoginPage";
 import RegisterPage from "../pages/User/RegisterPage";
 import ProfilePage from "../pages/User/ProfilePage";
+import BookingPage from "../pages/User/BookingPage";
 import ForgetPassword from "../pages/User/ForgetPassword";
 import ResetPassword from "../pages/User/ResetPassword";
 import UserProvider from "../context/User/ProviderContext/UserProvider";
@@ -30,6 +31,10 @@ const userRoutes = [
             {
                 path: "profile",
                 element: <ProfilePage />
+            },
+            {
+                path: "booking",
+                element: <BookingPage />
             },
             {
                 path: "forget-password",

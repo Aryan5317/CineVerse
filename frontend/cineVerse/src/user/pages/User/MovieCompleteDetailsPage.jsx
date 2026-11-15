@@ -4,7 +4,6 @@ import { useState, useEffect, useContext } from "react"
 import movieDetails from "../../services/User/getMovieDetails.js"
 import UserSectionButton from "../../components/Users/UserSectionButton.jsx"
 import { propContext } from "../../context/User/contextApi.js"
-import RegisterPage from "./RegisterPage.jsx"
 import { useNavigate } from "react-router-dom"
 
 function MovieCompleteDetailsPage() {

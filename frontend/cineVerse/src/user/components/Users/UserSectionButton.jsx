@@ -29,10 +29,18 @@ function UserSectionButton() {
                 <h1 className="text-sm">Theatre</h1>
             </div>
 
-            <div className="flex flex-col items-center gap-1 text-slate-600">
+            <NavLink
+                to="/booking"
+                className={({ isActive }) =>
+                    `flex flex-col items-center gap-1 transition-all duration-200 ${isActive
+                        ? "text-red-600 font-bold scale-110"
+                        : "text-slate-600 hover:text-red-500"
+                    }`
+                }
+            >
                 <span className="text-2xl">🎟️</span>
                 <h1 className="text-sm">Bookings</h1>
-            </div>
+            </NavLink>
 
             <NavLink
                 to="/profile"

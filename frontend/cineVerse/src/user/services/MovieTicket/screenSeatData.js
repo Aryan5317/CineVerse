@@ -1,11 +1,9 @@
-async function screenSeatData(movieId, theatreId) {
-    console.log("Movie id is: ", movieId)
-    console.log("Theatre id is: ", theatreId)
+async function screenSeatData(movieId, theatreId, showId) {
     try {
-        const response = await fetch(`http://localhost:8000/cineVerse/app/api/users/seat-data/${movieId}/${theatreId}`, {
-            method: "GET",
-            credentials: "include"
-        })
+        const response = await fetch(`http://localhost:8000/cineVerse/app/api/users/seat-data/${movieId}/${theatreId}?showId=${encodeURIComponent(showId)}`,{
+                method: "GET",
+                credentials: "include"
+            });
         const data = await response.json();
         console.log("Data is: ", data);
         if (!response.ok) {

@@ -8,6 +8,20 @@ const bookingSchema = new Schema({
         required: true,
         index: true
     },
+    paymentFailure: {
+        errorCode: {
+            type: String,
+            default: null
+        },
+        errorDescription: {
+            type: String,
+            default: null
+        },
+        failedAt: {
+            type: Date,
+            default: null
+        }
+    },
     movieId: {
         type: Schema.Types.ObjectId,
         ref: "Movie",
@@ -121,5 +135,6 @@ bookingSchema.index({
     bookingStatus: 1,
     paymentStatus: 1
 });
+
 
 export const Booking = mongoose.model("Booking", bookingSchema);

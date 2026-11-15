@@ -13,6 +13,17 @@ const formatTime = (time) => {
     return time.startTime || time.showTime || time.time || "Time selected";
 };
 
+const getRowLabel = (index) => {
+    let n = index + 1;
+    let label = "";
+    while (n > 0) {
+        const r = (n - 1) % 26;
+        label = String.fromCharCode(65 + r) + label;
+        n = Math.floor((n - 1) / 26);
+    }
+    return label;
+};
+
 function SelectSeats() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -23,6 +34,11 @@ function SelectSeats() {
         selectedDate,
         selectedTime,
     } = location.state || {};
+
+    const showId =
+        selectedTime?.showId?._id ||
+        selectedTime?.showId ||
+        selectedTime?._id;
 
     const [seatData, setSeatData] = useState(null);
     const [selectedSeats, setSelectedSeats] = useState([]);
@@ -39,7 +55,7 @@ function SelectSeats() {
             setSelectedSeats([]);
 
             try {
-                const response = await screenSeatData(movieId, theatreId);
+                const response = await screenSeatData(movieId, theatreId, showId);
 
                 const result =
                     response?.data?.seatData ??
@@ -70,8 +86,8 @@ function SelectSeats() {
             }
         };
 
-        if (!movieId || !theatreId) {
-            setError("Movie or theatre information is missing.");
+        if (!movieId || !theatreId || !showId) {
+            setError("Show details are missing. Please select your show again.");
             setLoading(false);
         } else {
             getScreenData();
@@ -80,7 +96,7 @@ function SelectSeats() {
         return () => {
             isMounted = false;
         };
-    }, [movieId, theatreId]);
+    }, [movieId, theatreId, showId]);
 
     const createSeatId = (categoryId, row, column) =>
         `${categoryId}-${row}-${column}`;
@@ -165,6 +181,11 @@ function SelectSeats() {
             ])
         );
     }, [seatData]);
+
+    const bookedSeatSet = useMemo(
+        () => new Set((seatData?.bookedSeats ?? []).map((id) => String(id).toUpperCase())),
+        [seatData]
+    );
 
     return (
         <div className="min-h-screen w-full bg-slate-50 text-slate-900">
@@ -292,6 +313,10 @@ function SelectSeats() {
                                     const categoryId =
                                         category._id || `category-${categoryIndex}`;
 
+                                    const rowOffset = categories
+                                        .slice(0, categoryIndex)
+                                        .reduce((sum, item) => sum + (Number(item.rows) || 0), 0);
+
                                     const rows = Math.max(
                                         0,
                                         Math.min(
@@ -342,10 +367,7 @@ function SelectSeats() {
                                                             {Array.from(
                                                                 { length: rows },
                                                                 (_, rowIndex) => {
-                                                                    const rowLabel =
-                                                                        String.fromCharCode(
-                                                                            65 + rowIndex
-                                                                        );
+                                                                    const rowLabel = getRowLabel(rowOffset + rowIndex);
 
                                                                     return (
                                                                         <div
@@ -375,13 +397,18 @@ function SelectSeats() {
                                                                                                 seat.id === seatId
                                                                                         );
 
+                                                                                    const isBooked =
+                                                                                        bookedSeatSet.has(seatId.toUpperCase());
+
                                                                                     return (
                                                                                         <button
                                                                                             key={seatId}
                                                                                             type="button"
                                                                                             aria-label={`Row ${rowLabel}, seat ${seatNumber}, ${category.seatType}`}
                                                                                             aria-pressed={isSelected}
+                                                                                            disabled={isBooked}
                                                                                             onClick={() => {
+                                                                                                if (isBooked) return;
                                                                                                 setError("");
 
                                                                                                 toggleSeat(
@@ -394,9 +421,11 @@ function SelectSeats() {
                                                                                                     category
                                                                                                 );
                                                                                             }}
-                                                                                            className={`flex h-6 w-[18px] items-center justify-center rounded-t-md rounded-b-[3px] border text-[8px] font-semibold transition active:scale-90 ${isSelected
-                                                                                                ? "border-blue-700 bg-blue-600 text-white shadow-sm"
-                                                                                                : "border-emerald-600 bg-white text-emerald-700 hover:bg-emerald-50"
+                                                                                            className={`flex h-6 w-[18px] items-center justify-center rounded-t-md rounded-b-[3px] border text-[8px] font-semibold transition active:scale-90 ${isBooked
+                                                                                                ? "cursor-not-allowed border-slate-300 bg-slate-200 text-slate-400"
+                                                                                                : isSelected
+                                                                                                    ? "border-blue-700 bg-blue-600 text-white shadow-sm"
+                                                                                                    : "border-emerald-600 bg-white text-emerald-700 hover:bg-emerald-50"
                                                                                                 }`}
                                                                                         >
                                                                                             {seatNumber}
@@ -449,11 +478,6 @@ function SelectSeats() {
                                 </div>
                             </div>
 
-                            <p className="mt-3 text-[11px] leading-4 text-amber-700">
-                                Seat availability has not been fetched from the
-                                backend. Green seats are selectable in this
-                                interface, not confirmed available for booking.
-                            </p>
                         </section>
                         <section className="mx-4 mt-5 rounded-2xl border border-slate-200 bg-white p-4">
                             <div className="flex items-center justify-between">

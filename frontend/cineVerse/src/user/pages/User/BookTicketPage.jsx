@@ -95,7 +95,8 @@ function BookTicketPage() {
     const SelectedMovieDate = (date) => {
         console.log("Selected date is: ", date);
         setSelectedDate(date);
-    }
+        setSelectedTime("");
+    };
 
     const SetSelectedMovieTime = (time) => {
         console.log("Selected time is: ", time);
@@ -139,9 +140,11 @@ function BookTicketPage() {
                 selectedTime
             }
         });
-
     };
-
+    
+    console.log("Selected Date:", selectedDate);
+    console.log("Available Show Dates:", movieData?.ShowDate);
+    console.log("Show Timings:", movieData?.ShowTimings);
     return (
         <div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -377,35 +380,55 @@ function BookTicketPage() {
                             )}
                         </div>
 
-                        <div>
-                            <div className="mb-3 flex items-center gap-2">
-                                <span className="text-lg">🕐</span>
-                                <span className="text-base font-bold text-slate-800">
-                                    Select Show Time
-                                </span>
-                            </div>
+                        {selectedDate && (
+                            <div>
+                                <div className="mb-3 flex items-center gap-2">
+                                    <span className="text-lg">🕐</span>
+                                    <span className="text-base font-bold text-slate-800">
+                                        Select Show Time
+                                    </span>
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-2.5">
-                                {movieData?.ShowTimings?.map((time) => (
-                                    <button
-                                        key={time._id}
-                                        type="button"
-                                        onClick={() => SetSelectedMovieTime(time)}
-                                        className={`rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm transition-all duration-200 active:scale-[0.98] ${selectedTime?._id === time._id
-                                                ? "border-blue-600 bg-blue-600 text-white shadow-md ring-2 ring-blue-200"
-                                                : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50"
-                                            }`}
-                                    >
-                                        {time.startTime}
-                                    </button>
-                                ))}
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {movieData?.ShowTimings
+                                        ?.filter((time) => {
+                                            if (!time.showDate || !selectedDate) return false;
+
+                                            const showDate = new Date(time.showDate);
+                                            const selected = new Date(selectedDate);
+
+                                            if (
+                                                Number.isNaN(showDate.getTime()) ||
+                                                Number.isNaN(selected.getTime())
+                                            ) {
+                                                return false;
+                                            }
+
+                                            return showDate.toISOString().slice(0, 10) ===
+                                                selected.toISOString().slice(0, 10);
+                                        })
+                                        .map((time) => (
+                                            <button
+                                                key={time._id}
+                                                type="button"
+                                                onClick={() => SetSelectedMovieTime(time)}
+                                                className={`rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm transition-all duration-200 active:scale-[0.98] ${selectedTime?._id === time._id
+                                                    ? "border-blue-600 bg-blue-600 text-white shadow-md ring-2 ring-blue-200"
+                                                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50"
+                                                    }`}
+                                            >
+                                                {time.startTime}
+                                            </button>
+                                        ))}
+                                </div>
+
+                                {errors.selectedTime && (
+                                    <p className="mt-2 text-sm font-medium text-red-600">
+                                        {errors.selectedTime}
+                                    </p>
+                                )}
                             </div>
-                            {errors.selectedTime && (
-                                <p className="mt-2 text-sm font-medium text-red-600">
-                                    {errors.selectedTime}
-                                </p>
-                            )}
-                        </div>
+                        )}
                     </div>
 
                     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md gap-3 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">

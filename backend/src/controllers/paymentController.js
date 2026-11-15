@@ -10,6 +10,7 @@ import { Movie } from "../models/movieModal.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/errorHandling.js";
+import ApiResponse from "../utils/apiResponse.js";
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
@@ -339,11 +340,21 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     }
 
     if (booking.paymentStatus === "Paid" && booking.bookingStatus === "Confirmed") {
-        return res.status(200).json({
-            success: true,
-            message: "Booking is already confirmed",
-            data: { bookingId: String(booking._id) },
-        });
+        const confirmedBooking = await Booking.findById(booking._id)
+            .populate("movieId")
+            .populate("theatreId")
+            .populate("screenId")
+            .populate("showId");
+
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                "Booking is already confirmed",
+                {
+                    booking: confirmedBooking
+                }
+            )
+        );
     }
 
     if (
@@ -448,16 +459,120 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
         await session.endSession();
     }
 
-    return res.status(200).json({
-        success: true,
-        message: "Payment verified and booking confirmed",
-        data: {
-            bookingId: String(booking._id),
-            bookingStatus: "Confirmed",
-            paymentStatus: "Paid",
-        },
-    });
+    const confirmedBooking = await Booking.findById(booking._id)
+        .populate("movieId")
+        .populate("theatreId")
+        .populate("screenId")
+        .populate("showId");
+
+    if (!confirmedBooking) {
+        throw new ApiError(404, "Confirmed booking details not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            "Payment verified and booking confirmed",
+            {
+                booking: confirmedBooking
+            }
+        )
+    );
 });
 
 
-export { createRazorpayOrder, verifyRazorpayPayment }
+const paymentFailed = asyncHandler(async (req, res) => {
+
+    const userId = req.user?._id;
+
+    const {
+        bookingId,
+        orderId,
+        paymentId,
+        errorCode,
+        errorDescription
+    } = req.body;
+
+    if (
+        !userId ||
+        !mongoose.Types.ObjectId.isValid(bookingId) ||
+        typeof orderId !== "string" ||
+        !orderId.trim()
+    ) {
+        throw new ApiError(400, "Invalid payment failure details");
+    }
+
+    const booking = await Booking.findOne({
+        _id: bookingId,
+        userId,
+        razorpayOrderId: orderId,
+        bookingStatus: "Pending",
+        paymentStatus: "Pending"
+    });
+
+    if (!booking) {
+        throw new ApiError(
+            404,
+            "Pending booking not found or booking is no longer available"
+        );
+    }
+
+    console.log("\n========== CINEVERSE PAYMENT FAILED ==========");
+
+    console.log("Booking ID:", bookingId);
+    console.log("User ID:", userId);
+    console.log("Order ID:", orderId);
+    console.log("Payment ID:", paymentId || "Not available");
+    console.log("Error Code:", errorCode || "Not available");
+    console.log("Error Description:", errorDescription || "Not available");
+
+    console.log("===============================================\n");
+
+    booking.paymentFailure = {
+        errorCode: errorCode || null,
+        errorDescription: errorDescription || "Payment failed",
+        failedAt: new Date()
+    };
+
+    await booking.save();
+
+    return res.status(200)
+        .json(new ApiResponse(200, "Payment failure recorded successfully", ""))
+});
+
+const getMyBookings = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(401, "Unauthorized user");
+    }
+
+    const bookings = await Booking.find({
+        userId,
+        bookingStatus: "Confirmed",
+        paymentStatus: "Paid",
+    })
+        .populate("movieId", "title moviePosterUrl language duration")
+        .populate(
+            "theatreId",
+            "theatreName theatreAddress theatreContactNo"
+        )
+        .populate(
+            "screenId",
+            "screenName screenNumber"
+        )
+        .populate(
+            "showId",
+            "showsDate showsStartTime screenNumber"
+        )
+        .sort({ createdAt: -1 });
+
+    return res.status(200).json(
+        new ApiResponse(200, "User bookings fetched successfully", {
+            bookings,
+        })
+    );
+});
+
+
+export { createRazorpayOrder, verifyRazorpayPayment, paymentFailed, getMyBookings }
